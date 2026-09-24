@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#03050b">
+<title>PACKET — путешествие одного запроса</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#03050b; --cy:#1fe0ff; --pk:#ff2d78; --gr:#00ff9d; --am:#ffb52e;
+  --vi:#a06bff; --rd:#ff4455; --tx:#e8f0ff; --mu:#7385a3; --mu2:#4a5875;
+  --mono:'JetBrains Mono',monospace; --disp:'Chakra Petch',system-ui,sans-serif;
+  color-scheme:dark;
+  --pad:env(safe-area-inset-left,0px);
+  --wy:47%;
+}
+@media(max-height:620px){:root{--wy:41%}}
+@media(max-height:460px){:root{--wy:38%}}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);
+  font-family:var(--disp);overscroll-behavior:none}
+body{position:fixed;inset:0;width:100%;height:100%}
+
+/* ============ ROTATE GATE ============ */
+#rotate{position:fixed;inset:0;z-index:999;background:var(--bg);display:none;
+  flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:30px;text-align:center}
+#rotate.show{display:flex}
+.phone{width:64px;height:110px;border:3px solid var(--cy);border-radius:11px;position:relative;
+  animation:rot 2.4s ease-in-out infinite;box-shadow:0 0 30px rgba(31,224,255,.4)}
+.phone::after{content:'';position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+  width:22px;height:3px;background:var(--cy);border-radius:2px}
+@keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
+#rotate h2{font-size:21px;font-weight:700;letter-spacing:.02em}
+#rotate p{font-size:13.5px;color:var(--mu);max-width:300px;line-height:1.6}
+#rotateSkip{margin-top:6px;background:transparent;border:1px solid rgba(120,150,170,.45);
+  color:var(--mu);padding:11px 22px;border-radius:8px;cursor:pointer;
+  font-family:inherit;font-size:12.5px;letter-spacing:.02em;transition:.25s}
+#rotateSkip:hover,#rotateSkip:active{border-color:var(--cy);color:var(--cy)}
+
+/* ============ APP ============ */
+#app{position:fixed;inset:0;opacity:1}
+#app.hid{display:none}
+
+/* ---- parallax layers ---- */
+.plx{position:absolute;inset:0;pointer-events:none;will-change:transform}
+#plx1{background-image:radial-gradient(1.4px 1.4px at 20% 30%,rgba(31,224,255,.5),transparent),
+  radial-gradient(1.4px 1.4px at 70% 60%,rgba(160,107,255,.45),transparent),
+  radial-gradient(1px 1px at 45% 80%,rgba(255,255,255,.3),transparent),
+  radial-gradient(1.6px 1.6px at 88% 22%,rgba(31,224,255,.35),transparent),
+  radial-gradient(1px 1px at 12% 70%,rgba(255,45,120,.3),transparent);
+  background-size:520px 420px;opacity:.85}
+#plx2{background-image:linear-gradient(rgba(70,110,180,.055) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(70,110,180,.055) 1px,transparent 1px);
+  background-size:62px 62px;opacity:.6}
+.glowfloor{position:absolute;left:0;right:0;bottom:0;height:42%;pointer-events:none;
+  background:radial-gradient(ellipse 70% 100% at 50% 130%,rgba(31,224,255,.11),transparent 70%)}
+
+/* ---- speed lines ---- */
+#speed{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
+#speed.on{opacity:1}
+#speed i{position:absolute;height:1.5px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,rgba(31,224,255,.85),transparent);
+  animation:zip .55s linear infinite;animation-play-state:paused;will-change:transform}
+#speed.on i{animation-play-state:running}
+@keyframes zip{from{transform:translateX(30vw) scaleX(.4)}to{transform:translateX(-120vw) scaleX(1.6)}}
+
+/* ============ HUD ============ */
+#hud{position:absolute;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;
+  gap:12px;padding:9px calc(14px + var(--pad));pointer-events:none}
+#hud>*{pointer-events:auto}
+.brand{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--cy);
+  white-space:nowrap;text-shadow:0 0 12px rgba(31,224,255,.55)}
+.brand b{color:var(--mu2);font-weight:400}
+.track{flex:1;display:flex;align-items:center;gap:0;height:22px;min-width:0}
+.track .seg{flex:1;height:2px;background:rgba(115,133,163,.22);position:relative;transition:.45s}
+.track .seg.done{background:var(--gr);box-shadow:0 0 7px rgba(0,255,157,.6)}
+.track .seg.cur{background:var(--cy);box-shadow:0 0 9px var(--cy)}
+.hbtn{font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:var(--mu);
+  border:1px solid rgba(115,133,163,.3);background:rgba(8,14,28,.6);border-radius:6px;
+  padding:6px 10px;cursor:pointer;transition:.22s;white-space:nowrap}
+.hbtn:hover,.hbtn:active{color:var(--cy);border-color:var(--cy);box-shadow:0 0 12px rgba(31,224,255,.3)}
+.stname{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mu);
+  white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:620px){.brand b{display:none}.stname{display:none}}
+
+/* ============ WORLD ============ */
+#viewport{position:absolute;inset:0;overflow:hidden}
+#world{position:absolute;top:0;left:0;height:100%;will-change:transform}
+#wireSvg{position:absolute;top:var(--wy);left:0;transform:translateY(-50%);height:220px;overflow:visible}
+.wline{fill:none;stroke:rgba(31,224,255,.16);stroke-width:2}
+.wglow{fill:none;stroke:var(--cy);stroke-width:2;filter:drop-shadow(0 0 6px var(--cy));
+  stroke-dasharray:14 22;animation:flow 1.1s linear infinite}
+/* сегмент, который ещё не пройден, не должен крутить анимацию вхолостую */
+.wseg{animation-play-state:paused}
+.wseg.vis{animation-play-state:running}
+@keyframes flow{to{stroke-dashoffset:-36}}
+.wdone{stroke:var(--gr);filter:drop-shadow(0 0 7px var(--gr))}
+.wlab{stroke:rgba(160,107,255,.2)}
+.wlab-g{stroke:var(--vi);filter:drop-shadow(0 0 6px var(--vi))}
+
+/* station nodes */
+/* transition только по transform/opacity: иначе при ресайзе 14 узлов
+   полсекунды анимируют свойство left и дают лишние layout-проходы */
+.node{position:absolute;top:var(--wy);transform:translate(-50%,-50%);width:78px;height:78px;
+  display:flex;align-items:center;justify-content:center;transition:transform .5s,opacity .5s}
+.nring{position:absolute;inset:0;border:1.5px solid rgba(115,133,163,.3);
+  border-radius:14px;transform:rotate(45deg);transition:.5s;background:rgba(5,9,18,.75)}
+.node.on .nring{border-color:var(--cy);width:112%;height:112%;margin:-6%;
+  box-shadow:0 0 30px rgba(31,224,255,.55),inset 0 0 18px rgba(31,224,255,.11)}
+.node.done .nring{border-color:rgba(0,255,157,.55);background:rgba(0,255,157,.045)}
+.node.lab .nring{border-radius:50%}
+.node.lab.on .nring{border-color:var(--vi);box-shadow:0 0 26px rgba(160,107,255,.5)}
+.nico{position:relative;font-size:27px;line-height:1;filter:grayscale(1) opacity(.45);transition:.5s}
+.node.on .nico{filter:none;opacity:0;transform:scale(1.7)}
+.node.done .nico{filter:grayscale(.3) opacity(.8)}
+.nlbl{position:absolute;top:-25px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;color:var(--mu2);transition:.4s}
+.node.on .nlbl{color:var(--cy)}
+.node.done .nlbl{color:rgba(0,255,157,.6)}
+
+/* ============ PACKET CUBE ============ */
+#pkt{position:absolute;top:var(--wy);left:0;width:62px;height:62px;margin:-31px 0 0 -31px;
+  perspective:700px;pointer-events:none;z-index:20;opacity:0;will-change:transform}
+#pkt.on{opacity:1}
+.cube{width:62px;height:62px;position:relative;transform-style:preserve-3d;
+  animation:spin 9s linear infinite;animation-play-state:paused}
+#pkt.on .cube{animation-play-state:running}
+@keyframes spin{from{transform:rotateX(-16deg) rotateY(0)}to{transform:rotateX(-16deg) rotateY(360deg)}}
+.cf{position:absolute;width:62px;height:62px;border:1.5px solid var(--cy);
+  background:rgba(31,224,255,.09);display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:7.5px;color:var(--cy);letter-spacing:.04em;
+  box-shadow:inset 0 0 22px rgba(31,224,255,.2);text-align:center;line-height:1.35;padding:3px}
+.cf:nth-child(1){transform:translateZ(31px)}
+.cf:nth-child(2){transform:rotateY(180deg) translateZ(31px)}
+.cf:nth-child(3){transform:rotateY(90deg) translateZ(31px)}
+.cf:nth-child(4){transform:rotateY(-90deg) translateZ(31px)}
+.cf:nth-child(5){transform:rotateX(90deg) translateZ(31px)}
+.cf:nth-child(6){transform:rotateX(-90deg) translateZ(31px)}
+#pkt .halo{position:absolute;inset:-30px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(31,224,255,.3),transparent 66%);
+  animation:pulse 2.4s ease-in-out infinite;animation-play-state:paused}
+#pkt.on .halo{animation-play-state:running}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
+/* packet state skins */
+#pkt.enc .cf{border-color:var(--gr);color:var(--gr);background:rgba(0,255,157,.09);
+  box-shadow:inset 0 0 22px rgba(0,255,157,.2)}
+#pkt.enc .halo{background:radial-gradient(circle,rgba(0,255,157,.3),transparent 66%)}
+#pkt.warn .cf{border-color:var(--am);color:var(--am);background:rgba(255,181,46,.09)}
+#pkt.warn .halo{background:radial-gradient(circle,rgba(255,181,46,.3),transparent 66%)}
+#pkt.resp .cf{border-color:var(--vi);color:var(--vi);background:rgba(160,107,255,.1)}
+#pkt.resp .halo{background:radial-gradient(circle,rgba(160,107,255,.3),transparent 66%)}
+
+/* ============ PANEL ============ */
+#panel{position:absolute;left:0;right:0;bottom:0;z-index:35;
+  padding:0 calc(16px + var(--pad)) calc(13px + env(safe-area-inset-bottom,0px));
+  transform:translateY(112%);transition:transform .6s cubic-bezier(.22,.9,.3,1);pointer-events:none}
+#panel.on{transform:none;pointer-events:auto}
+.pinner{max-width:940px;margin:0 auto;background:linear-gradient(175deg,rgba(9,15,29,.94),rgba(5,9,18,.97));
+  border:1px solid rgba(31,224,255,.22);border-radius:14px;padding:15px 18px;
+  backdrop-filter:blur(16px);box-shadow:0 -12px 46px -18px rgba(31,224,255,.3);
+  display:flex;gap:16px;align-items:flex-start}
+.pinner.lab{border-color:rgba(160,107,255,.28);box-shadow:0 -12px 46px -18px rgba(160,107,255,.32)}
+.pmain{flex:1;min-width:0}
+.ptag{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--cy);margin-bottom:5px}
+.pinner.lab .ptag{color:var(--vi)}
+#ptitle{font-size:clamp(17px,2.9vw,25px);font-weight:700;line-height:1.14;letter-spacing:-.01em;margin-bottom:6px}
+.pbodywrap{position:relative}
+.pbodywrap::after{content:'';position:absolute;left:0;right:0;bottom:0;height:22px;pointer-events:none;
+  background:linear-gradient(transparent,rgba(7,12,24,.97));opacity:0;transition:.3s}
+.pbodywrap.scrollable::after{opacity:1}
+#pbody{font-size:clamp(11.8px,1.55vw,13.8px);line-height:1.56;color:#a8b6ce;max-height:19vh;overflow-y:auto;
+  scrollbar-width:thin}
+#pbody b{color:var(--tx);font-weight:600}
+#pbody .hi{color:var(--cy)}
+#ptech{font-family:var(--mono);font-size:9.5px;color:var(--cy);margin-top:7px;
+  background:rgba(31,224,255,.07);border:1px solid rgba(31,224,255,.18);
+  padding:5px 10px;border-radius:6px;display:inline-block;letter-spacing:.03em}
+.pside{display:flex;flex-direction:column;gap:7px;flex-shrink:0}
+.pbtn{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.03em;
+  padding:10px 17px;border-radius:8px;border:none;cursor:pointer;white-space:nowrap;transition:.2s}
+.pnext{background:linear-gradient(100deg,var(--cy),var(--vi));color:#03060e}
+.pnext:hover{filter:brightness(1.15)}
+.pdoss{background:rgba(160,107,255,.1);border:1px solid rgba(160,107,255,.35);color:var(--vi)}
+.pdoss:hover{background:rgba(160,107,255,.2)}
+.pback{background:transparent;border:1px solid rgba(115,133,163,.3);color:var(--mu);font-size:11px;padding:7px 15px}
+.pback:hover{color:var(--tx);border-color:var(--mu)}
+@media(max-width:640px),(max-height:430px){
+  .pinner{padding:11px 13px;gap:11px}
+  #pbody{max-height:20vh;font-size:11.5px;line-height:1.5}
+  #ptitle{font-size:16px;margin-bottom:4px}
+  .pbtn{font-size:11px;padding:8px 13px}
+  #ptech{font-size:8.5px;padding:4px 8px}
+}
+
+/* ============ INTRO TERMINAL ============ */
+#intro{position:absolute;inset:0;z-index:60;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:22px calc(20px + var(--pad));transition:opacity .8s,transform .8s}
+#intro.gone{opacity:0;transform:scale(1.14);pointer-events:none}
+.ieyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--mu2);margin-bottom:13px;text-align:center}
+.ititle{font-size:clamp(25px,6.4vw,58px);font-weight:700;letter-spacing:-.035em;line-height:.98;
+  text-align:center;margin-bottom:9px;
+  background:linear-gradient(100deg,#fff 15%,var(--cy) 55%,var(--vi));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.isub{font-size:clamp(11.5px,1.75vw,14.5px);color:var(--mu);text-align:center;
+  max-width:480px;margin-bottom:clamp(16px,3.4vh,30px);line-height:1.55}
+.term{width:100%;max-width:560px;background:rgba(7,12,24,.9);border:1px solid rgba(31,224,255,.28);
+  border-radius:11px;overflow:hidden;box-shadow:0 0 46px -14px rgba(31,224,255,.45)}
+.tbar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid rgba(31,224,255,.14);
+  background:rgba(31,224,255,.035)}
+.tbar i{width:8px;height:8px;border-radius:50%;background:#2a3348}
+.tbar i:nth-child(1){background:#ff5f57}.tbar i:nth-child(2){background:#febc2e}.tbar i:nth-child(3){background:#28c840}
+.tbar span{font-family:var(--mono);font-size:9.5px;color:var(--mu2);margin-left:5px;letter-spacing:.07em}
+.tbody{padding:14px}
+.tprompt{font-family:var(--mono);font-size:10.5px;color:var(--gr);margin-bottom:9px}
+.trow{display:flex;gap:9px;align-items:stretch}
+#msg{flex:1;min-width:0;font-family:var(--mono);font-size:clamp(12px,1.7vw,14px);
+  background:#04070f;border:1px solid rgba(31,224,255,.22);border-radius:7px;
+  padding:11px 13px;color:var(--cy);outline:none;transition:.2s}
+#msg:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(31,224,255,.1)}
+#msg::placeholder{color:var(--mu2)}
+#send{font-family:var(--disp);font-weight:700;font-size:clamp(12px,1.6vw,14px);letter-spacing:.04em;
+  padding:11px clamp(16px,3vw,28px);border-radius:7px;border:none;cursor:pointer;
+  background:linear-gradient(100deg,var(--cy),var(--vi));color:#03060e;transition:.2s;white-space:nowrap}
+#send:hover{filter:brightness(1.17);transform:translateY(-1px)}
+#send:active{transform:translateY(0)}
+.thint{font-family:var(--mono);font-size:9.5px;color:var(--mu2);margin-top:10px;letter-spacing:.05em}
+.istart{margin-top:clamp(14px,3vh,26px);display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+
+/* ---- transformation stage ---- */
+#xform{position:absolute;inset:0;z-index:61;display:none;align-items:center;justify-content:center;
+  background:var(--bg);padding:20px}
+#xform.on{display:flex}
+.xjson{font-family:var(--mono);font-size:clamp(11px,1.9vw,16px);line-height:1.85;color:var(--mu);
+  text-align:left;transition:transform .85s cubic-bezier(.6,0,.4,1),opacity .85s,filter .85s}
+.xjson .k{color:var(--cy)}.xjson .s{color:var(--gr)}.xjson .n{color:var(--am)}.xjson .p{color:var(--mu2)}
+.xjson div{opacity:0;transform:translateX(-14px);animation:jin .38s forwards}
+@keyframes jin{to{opacity:1;transform:none}}
+.xjson.crush{transform:scale(.06) rotate(22deg);opacity:0;filter:blur(7px)}
+#xflash{position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;opacity:0;
+  box-shadow:0 0 60px 26px rgba(31,224,255,.85)}
+#xflash.go{animation:fl .75s ease-out forwards}
+@keyframes fl{0%{opacity:0;transform:scale(.3)}22%{opacity:1;transform:scale(1.5)}100%{opacity:0;transform:scale(5)}}
+.xcaption{position:absolute;bottom:13%;left:0;right:0;text-align:center;
+  font-family:var(--mono);font-size:clamp(9.5px,1.5vw,12px);letter-spacing:.17em;
+  color:var(--cy);opacity:0;transition:opacity .5s}
+.xcaption.on{opacity:1}
+
+/* ============ MODAL ============ */
+#modal{position:absolute;inset:0;z-index:80;background:rgba(2,4,10,.93);backdrop-filter:blur(9px);
+  display:none;flex-direction:column;padding:calc(11px + env(safe-area-inset-top,0px)) calc(14px + var(--pad)) calc(11px + env(safe-area-inset-bottom,0px))}
+#modal.on{display:flex}
+.mhead{display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-shrink:0}
+.mtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--vi)}
+.mtitle{font-size:clamp(15px,2.4vw,22px);font-weight:700;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mclose{font-family:var(--mono);font-size:11px;padding:7px 14px;border-radius:7px;cursor:pointer;
+  background:rgba(255,68,85,.1);border:1px solid rgba(255,68,85,.35);color:var(--rd);transition:.2s}
+.mclose:hover{background:rgba(255,68,85,.22)}
+.mbody{flex:1;overflow-y:auto;padding-right:5px}
+.mbody::-webkit-scrollbar{width:7px}
+.mbody::-webkit-scrollbar-thumb{background:#1b2540;border-radius:4px}
+
+/* dossier content */
+.dgrid{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr))}
+.dcard{background:rgba(9,15,29,.8);border:1px solid rgba(115,133,163,.2);border-radius:11px;padding:14px 16px}
+.dcard h4{font-size:14.5px;font-weight:600;margin-bottom:6px;color:var(--c,var(--cy))}
+.dcard p{font-size:12.3px;line-height:1.55;color:#a3b1c9;margin-bottom:7px}
+.dcard p:last-child{margin-bottom:0}
+.dcard b{color:var(--tx)}
+.dcard ul{list-style:none;display:grid;gap:5px;margin-top:6px}
+.dcard li{font-size:12px;color:#a3b1c9;padding-left:13px;position:relative;line-height:1.5}
+.dcard li::before{content:'▸';position:absolute;left:0;color:var(--c,var(--cy));font-size:9.5px;top:2px}
+.dfoot{margin-top:9px;padding-top:8px;border-top:1px solid rgba(115,133,163,.17);
+  font-size:11.5px;color:var(--mu)}
+.dfoot b{color:var(--c,var(--cy))}
+.drow{display:flex;gap:11px;padding:9px 13px;border-radius:8px;background:rgba(9,15,29,.7);
+  border:1px solid rgba(115,133,163,.17);margin-bottom:6px;align-items:flex-start}
+.drow .did{font-family:var(--mono);font-size:9.5px;color:var(--rd);min-width:46px;font-weight:700;padding-top:2px}
+.drow b{display:block;font-size:12.8px;margin-bottom:2px;color:var(--tx);font-weight:600}
+.drow span{font-size:11.7px;color:var(--mu);line-height:1.45}
+.drow.au{border-left:2px solid var(--am)}
+pre.code{font-family:var(--mono);font-size:11.5px;line-height:1.7;color:#a3b1c9;background:#04070f;
+  border:1px solid rgba(115,133,163,.2);border-radius:8px;padding:12px;overflow-x:auto;margin-top:7px}
+.jwtline{font-family:var(--mono);font-size:clamp(9.5px,1.5vw,13px);word-break:break-all;
+  text-align:center;background:#04070f;border:1px solid rgba(115,133,163,.2);
+  border-radius:8px;padding:13px;line-height:1.9;margin-bottom:10px}
+.jwtline .a{color:var(--pk)}.jwtline .b{color:var(--vi)}.jwtline .c{color:var(--cy)}.jwtline .d{color:var(--mu2)}
+
+/* ============ POSTMAN TERMINAL ============ */
+.pmtasks{display:flex;gap:5px;overflow-x:auto;padding-bottom:9px;margin-bottom:10px;
+  border-bottom:1px solid rgba(115,133,163,.17)}
+.pmtasks button{font-family:var(--mono);font-size:10px;white-space:nowrap;padding:6px 10px;
+  border-radius:6px;border:1px solid rgba(115,133,163,.24);background:rgba(255,255,255,.02);
+  color:var(--mu);cursor:pointer;transition:.2s}
+.pmtasks button.on{background:rgba(31,224,255,.12);border-color:var(--cy);color:var(--cy)}
+.pmwrap{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
+.pmcol{background:rgba(9,15,29,.8);border:1px solid rgba(115,133,163,.2);border-radius:11px;overflow:hidden}
+.pmurl{display:flex;gap:7px;padding:11px;align-items:center;flex-wrap:wrap;border-bottom:1px solid rgba(115,133,163,.15)}
+.pmm{font-family:var(--mono);font-weight:700;font-size:11px;padding:7px 11px;border-radius:6px;
+  border:1px solid;min-width:68px;text-align:center;letter-spacing:.04em}
+.pmu{flex:1;min-width:150px;font-family:var(--mono);font-size:11px;padding:7px 10px;border-radius:6px;
+  background:#04070f;border:1px solid rgba(115,133,163,.2);color:var(--cy);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pmsend{font-family:var(--disp);font-weight:700;font-size:11.5px;padding:7px 18px;border-radius:6px;
+  border:none;background:linear-gradient(100deg,var(--cy),var(--vi));color:#03060e;cursor:pointer}
+.pmsend:disabled{opacity:.5}
+.pmsec{padding:11px;font-family:var(--mono);font-size:11px}
+.pmsec .lbl{font-size:9px;letter-spacing:.14em;color:var(--mu2);margin-bottom:6px}
+.kv{display:flex;gap:9px;padding:2px 0}
+.kv b{color:var(--am);font-weight:500;min-width:98px;font-size:10.5px}
+.kv span{color:#a3b1c9;font-size:10.5px}
+.pmsec pre{color:var(--gr);white-space:pre-wrap;line-height:1.6;font-size:10.5px}
+.pmstat{display:flex;gap:13px;font-family:var(--mono);font-size:10px;margin-bottom:8px;flex-wrap:wrap}
+.pmstat b{color:var(--gr)}.pmstat i{color:var(--mu2);font-style:normal}
+.pmout{font-family:var(--mono);font-size:10.5px;line-height:1.7;color:#a3b1c9;white-space:pre-wrap;
+  word-break:break-word;max-height:30vh;overflow-y:auto}
+.pmout .jk{color:var(--cy)}.pmout .jv{color:var(--gr)}
+.pmout .jn{color:var(--am)}.pmout .jb{color:var(--pk)}
+.pmhint{margin-top:10px;padding:11px 13px;border-radius:9px;background:rgba(160,107,255,.06);
+  border:1px solid rgba(160,107,255,.2);font-size:12.2px;color:#a3b1c9;line-height:1.55}
+.pmhint b{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--vi);margin-bottom:5px}
+
+/* ============ EXAM TICKETS ============ */
+.tickets{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
+.ticket{perspective:1200px;min-height:170px;cursor:pointer}
+.tin{position:relative;width:100%;height:100%;min-height:170px;transition:transform .7s cubic-bezier(.4,.2,.2,1);
+  transform-style:preserve-3d}
+.ticket.on .tin{transform:rotateY(180deg)}
+.tf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border-radius:11px;border:1px solid rgba(115,133,163,.24);background:rgba(9,15,29,.85);
+  padding:15px;display:flex;flex-direction:column}
+.tfront{justify-content:space-between}
+.tfront .tno{font-family:var(--mono);font-size:26px;font-weight:700;color:rgba(31,224,255,.22);line-height:1}
+.tfront h4{font-size:13.5px;font-weight:600;line-height:1.38;margin:9px 0}
+.tfront .tap{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--mu2)}
+.tback{transform:rotateY(180deg);background:linear-gradient(160deg,rgba(31,224,255,.09),rgba(6,11,22,.97));
+  border-color:rgba(31,224,255,.3);overflow-y:auto}
+.tback .tans{font-family:var(--mono);font-size:8.5px;letter-spacing:.15em;color:var(--cy);margin-bottom:8px;flex-shrink:0}
+.tback p{font-size:11.8px;color:#b6c3da;line-height:1.55;margin-bottom:7px}
+.tback p:last-child{margin-bottom:0}
+.tback b{color:var(--tx)}
+.tback code{font-family:var(--mono);font-size:10.5px;background:rgba(31,224,255,.1);color:var(--cy);
+  padding:1px 4px;border-radius:3px}
+.examtop{display:flex;align-items:center;gap:13px;margin-bottom:11px;flex-wrap:wrap}
+.examtop .cnt{font-family:var(--mono);font-size:10.5px;color:var(--mu)}
+.examtop .cnt b{color:var(--gr)}
+
+/* ============ FINALE ============ */
+.fin{text-align:center;padding:14px}
+.fin h2{font-size:clamp(20px,3.6vw,34px);font-weight:700;margin-bottom:10px;
+  background:linear-gradient(100deg,#fff,var(--cy) 55%,var(--vi));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.fin p{font-size:12.8px;color:#a3b1c9;max-width:540px;margin:0 auto 9px;line-height:1.6}
+.srcs{max-width:620px;margin:16px auto 0;text-align:left;padding:14px;border-radius:10px;
+  background:rgba(9,15,29,.8);border:1px solid rgba(115,133,163,.2);font-size:11.5px;color:var(--mu)}
+.srcs b{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--cy);margin-bottom:7px}
+.srcs li{list-style:none;padding-left:12px;position:relative;margin-bottom:4px;line-height:1.5}
+.srcs li::before{content:'·';position:absolute;left:3px;color:var(--cy)}
+.srcs a{color:var(--vi);text-decoration:none;border-bottom:1px solid rgba(160,107,255,.3)}
+
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#1b2540;border-radius:4px}
+/* ===== ФИКС: низкий экран (телефон горизонтально / открыта клавиатура) =====
+   Интро выше вьюпорта -> контент обрезался, поле ввода уезжало за край и его
+   нельзя было нажать. Делаем интро прокручиваемым и компактным. */
+@media(max-height:470px){
+  #intro{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding-top:12px;padding-bottom:12px}
+  #intro>*{flex-shrink:0}
+  .ieyebrow{margin-bottom:6px;font-size:9px}
+  .ititle{font-size:clamp(19px,4.6vw,30px);margin-bottom:5px}
+  .isub{font-size:11.5px;margin-bottom:10px;line-height:1.4}
+  .istart{margin-top:8px}
+}
+@media(max-height:330px){
+  .ieyebrow,.isub,.thint{display:none}
+  .ititle{font-size:18px;margin-bottom:6px}
+}
+/* доступность: видимый фокус с клавиатуры, в стилистике интерфейса */
+button:focus-visible,input:focus-visible,.ticket:focus-visible{
+  outline:2px solid var(--cy);outline-offset:2px}
+.ticket{outline-offset:4px}
+
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.12s!important}
+  #speed{display:none}
+}
+</style>
+<style>
+.ha-img-placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:#f4f4f5;border:1px dashed #d4d4d8;border-radius:8px;color:#71717a;font-size:12px;font-family:system-ui,sans-serif;min-height:80px;padding:16px;box-sizing:border-box;animation:ha-img-pulse 1.5s ease-in-out infinite}
+.ha-img-placeholder.ha-failed{animation:none;opacity:.7}
+@keyframes ha-img-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@media(prefers-color-scheme:dark){.ha-img-placeholder{background:#27272a;border-color:#3f3f46;color:#a1a1aa}}
+</style>
+</head>
+<body>
+
+<div id="rotate">
+  <div class="phone"></div>
+  <h2>Поверни телефон</h2>
+  <p>Это путешествие показывается горизонтально — как в кино. Разверни устройство в альбомный режим.</p>
+  <button id="rotateSkip" type="button">Экран не поворачивается? Продолжить так →</button>
+</div>
+
+<div id="app">
+  <div class="plx" id="plx1"></div>
+  <div class="plx" id="plx2"></div>
+  <div class="glowfloor"></div>
+  <div id="speed"></div>
+
+  <div id="viewport">
+    <div id="world">
+      <svg id="wireSvg" preserveAspectRatio="none"><g id="wireG"></g></svg>
+      <div id="nodes"></div>
+      <div id="pkt">
+        <div class="halo"></div>
+        <div class="cube" id="cube">
+          <div class="cf">01001000</div><div class="cf">4A 53 4F 4E</div>
+          <div class="cf">PAYLOAD</div><div class="cf">0x1F3A</div>
+          <div class="cf">11010110</div><div class="cf">TCP/IP</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header id="hud">
+    <div class="brand">PACKET<b> · ПР №3 · ДГТУ</b></div>
+    <div class="track" id="track"></div>
+    <div class="stname" id="stname"></div>
+    <button class="hbtn" id="fsBtn" type="button" aria-label="Полноэкранный режим">ВЕСЬ ЭКРАН</button>
+  </header>
+
+  <div id="panel">
+    <div class="pinner" id="pinner">
+      <div class="pmain">
+        <div class="ptag" id="ptag"></div>
+        <div id="ptitle"></div>
+        <div class="pbodywrap" id="pbodywrap"><div id="pbody"></div></div>
+        <div id="ptech"></div>
+      </div>
+      <div class="pside">
+        <button class="pbtn pnext" id="nextBtn" type="button">ДАЛЬШЕ →</button>
+        <button class="pbtn pdoss" id="dossBtn" type="button">ДОСЬЕ</button>
+        <button class="pbtn pback" id="backBtn" type="button">← назад</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="xform">
+    <div class="xjson" id="xjson"></div>
+    <div id="xflash"></div>
+    <div class="xcaption" id="xcap"></div>
+  </div>
+
+  <div id="intro">
+    <div class="ieyebrow">ДГТУ · КАФЕДРА ИНФОРМАЦИОННЫХ ТЕХНОЛОГИЙ · ПРАКТИЧЕСКАЯ РАБОТА №3</div>
+    <div class="ititle">PACKET</div>
+    <div class="isub">
+      Клиент-серверная архитектура и API — не в виде презентации, а в виде путешествия.
+      Напиши любое сообщение: оно станет твоим запросом, и ты проследишь его путь до сервера и обратно.
+    </div>
+    <div class="term">
+      <div class="tbar"><i></i><i></i><i></i><span>client@dstu — new request</span></div>
+      <div class="tbody">
+        <div class="tprompt">$ введи сообщение для отправки на сервер</div>
+        <div class="trow">
+          <input id="msg" type="text" maxlength="42" placeholder="Привет, сервер!" autocomplete="off" spellcheck="false">
+          <button id="send" type="button">ОТПРАВИТЬ</button>
+        </div>
+        <div class="thint">↵ Enter — отправить · стрелки ← → — навигация по маршруту</div>
+      </div>
+    </div>
+    <div class="istart">
+      <button class="hbtn" id="fsBtn2" type="button">▶ ЗАПУСТИТЬ ВО ВЕСЬ ЭКРАН (рекомендуется)</button>
+    </div>
+  </div>
+
+  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+    <div class="mhead">
+      <span class="mtag" id="mtag">ДОСЬЕ</span>
+      <span class="mtitle" id="mtitle"></span>
+      <button class="mclose" id="mclose" type="button">ЗАКРЫТЬ ✕</button>
+    </div>
+    <div class="mbody" id="mbody"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   DATA — маршрут пакета
+   ============================================================ */
+var USER_MSG = "Привет, сервер!";
+
+var ST = [
+ {ic:'🖥',lbl:'КЛИЕНТ',tag:'ТОЧКА ОТПРАВЛЕНИЯ · 01',
+  t:'Твой запрос родился',
+  b:'Ты — <b>клиент</b>. Браузер, мобильное приложение или Postman: тот, кто начинает диалог. Сервер сам никогда не пишет первым — он ждёт.<br><br>Клиенту запрещено лезть в базу данных сервера напрямую. Вместо этого сервер публикует <span class="hi">API</span> — строго описанный набор точек входа. API это <b>контракт</b>: пока он соблюдается, сервер можно переписать хоть с PHP на Go, и ты не заметишь.',
+  k:'Контрольный вопрос №1 · клиент-серверная архитектура и API',
+  d:'cs'},
+
+ {ic:'{ }',lbl:'JSON',tag:'СЕРИАЛИЗАЦИЯ · 02',
+  t:'Текст стал структурой',
+  b:'Твоё сообщение больше не строка — это <span class="hi">JSON</span>-объект с полями. Клиент и сервер написаны на разных языках и живут на разных континентах, поэтому данные превращают в общий текстовый формат. Это и называется <b>сериализацией</b>.<br><br>Теперь объект упакован в байты — тот самый куб, за которым мы следим.',
+  k:'Контрольный вопрос №5 · JSON и XML',
+  d:'json'},
+
+ {ic:'📮',lbl:'HTTP',tag:'ФОРМИРОВАНИЕ ЗАПРОСА · 03',
+  t:'Пакет получил адрес и глагол',
+  b:'Вокруг данных нарос HTTP-конверт из четырёх частей: <span class="hi">метод</span> (что делаем), <span class="hi">URL</span> (с чем), <span class="hi">заголовки</span> (метаданные) и <span class="hi">тело</span> (сами данные).<br><br>Метод — это глагол. Один и тот же адрес <b>/posts/1</b> ведёт себя по-разному: GET прочитает, PUT обновит, DELETE удалит.',
+  k:'Контрольные вопросы №3 и №4 · HTTP-методы и пример запроса',
+  d:'http'},
+
+ {ic:'🔒',lbl:'TLS',tag:'ШИФРОВАНИЕ КАНАЛА · 04',
+  t:'Пакет надел броню',
+  b:'Между тобой и сервером — десятки чужих роутеров. По открытому HTTP любой из них прочитал бы твой пароль как открытку.<br><br><span class="hi">TLS</span> оборачивает пакет в шифрованную оболочку: стороны обмениваются ключами, и дальше содержимое видят только они. Буква <b>S</b> в HTTPS — это именно она.',
+  k:'Рукопожатие TLS · сертификат · симметричный ключ сессии',
+  d:null, skin:'enc'},
+
+ {ic:'🛂',lbl:'ЛИЧНОСТЬ',tag:'API GATEWAY · РУБЕЖ 1 · 05',
+  t:'Стоп. Кто ты такой?',
+  b:'Пакет упёрся в <span class="hi">API Gateway</span> — единую дверь перед всеми сервисами компании. Первое, что здесь спрашивают: предъяви документы.<br><br>Шлюз читает заголовок <b>Authorization</b>, проверяет подпись JWT или ищет API-ключ. Токен поддельный или просрочен — запрос умирает здесь, с кодом <b>401</b>, и до бэкенда не доедет.',
+  k:'Контрольный вопрос №7 · аутентификация и авторизация',
+  d:'auth'},
+
+ {ic:'⏳',lbl:'ЛИМИТЫ',tag:'API GATEWAY · РУБЕЖ 2 · 06',
+  t:'А не слишком ли часто?',
+  b:'Документы в порядке — но и у своих есть квота. Алгоритм <span class="hi">token bucket</span> выдаёт жетоны с постоянной скоростью: есть жетон — проходи, кончились — <b>429 Too Many Requests</b>.<br><br>Это защита и от DDoS, и от просто сломанного клиента, зациклившегося на запросе.',
+  k:'Token bucket · sliding window · квоты по тарифу',
+  d:'owasp', skin:'warn'},
+
+ {ic:'🔀',lbl:'МАРШРУТ',tag:'API GATEWAY · РУБЕЖ 3 · 07',
+  t:'Куда тебя направить',
+  b:'Шлюз смотрит на путь, заголовки и версию API и решает, какому из сотни сервисов отдать запрос.<br><br>В этом вся магия: <b>клиент знает один адрес</b>, а за ним сервисы переезжают, масштабируются и умирают — и клиент об этом никогда не узнает. Заодно шлюз пишет логи и ставит trace-id: через него идёт весь трафик, значит только здесь систему видно целиком.',
+  k:'Маршрутизация · трансформация · агрегация · observability',
+  d:'giants', skin:'enc'},
+
+ {ic:'⚙️',lbl:'БЭКЕНД',tag:'СЕРВЕР · 08',
+  t:'Запрос у цели',
+  b:'Сервис получил пакет — расшифрованный, с проверенной подписью, в рамках квоты. Ему осталось единственное, ради чего он существует: <b>бизнес-логика</b>.<br><br>Он разбирает тело запроса, валидирует поля, решает, что делать, и при необходимости идёт в базу данных.',
+  k:'Контрольный вопрос №6 · обработка HTTP-запроса на сервере',
+  d:'server'},
+
+ {ic:'🗄',lbl:'БАЗА',tag:'ХРАНИЛИЩЕ · 09',
+  t:'Данные найдены',
+  b:'Сервис формирует запрос к базе, получает строки и собирает из них ответный объект.<br><br>Обрати внимание: <b>база данных не торчит в интернет</b>. До неё можно дотянуться только через сервис, а до сервиса — только через шлюз. Это называется эшелонированной защитой: каждый слой прикрывает следующий.',
+  k:'SQL-запрос · пул соединений · изоляция периметра',
+  d:null},
+
+ {ic:'📦',lbl:'ОТВЕТ',tag:'ОБРАТНЫЙ ПУТЬ · 10',
+  t:'200 OK — пакет возвращается',
+  b:'Результат сериализуется обратно в JSON, к нему добавляется <span class="hi">статус-код</span> и заголовки. И пакет летит домой тем же путём.<br><br><b>200</b> OK · <b>201</b> Created · <b>400</b> Bad Request · <b>401</b> Unauthorized · <b>403</b> Forbidden · <b>404</b> Not Found · <b>429</b> Too Many Requests · <b>500</b> Internal Server Error.',
+  k:'Первая цифра решает всё: 2xx успех · 4xx виноват клиент · 5xx виноват сервер',
+  d:null, skin:'resp'},
+
+ {ic:'🏁',lbl:'ФИНИШ',tag:'ПРИБЫТИЕ · 11',
+  t:'Ответ дома. Прошло 200 мс',
+  b:'Твоё сообщение ушло строкой текста, стало структурой, оделось в конверт и броню, доказало личность, уложилось в квоту, нашло свой сервис, сходило в базу — и вернулось.<br><br>Всё это — быстрее, чем ты успел моргнуть. <b>Дальше — лаборатория:</b> терминал Postman с заданиями практической и экзаменационные билеты.',
+  k:'Маршрут пройден полностью · 11 контрольных точек',
+  d:null, skin:'resp'},
+
+ {ic:'🧪',lbl:'POSTMAN',tag:'ЛАБОРАТОРИЯ · 12',lab:true,
+  t:'Терминал Postman',
+  b:'Все <b>10 рабочих заданий</b> практической работы №3 в интерактивном виде. Выбери задание, нажми Send — и увидишь, что именно возвращает <span class="hi">postman-echo.com</span> и почему.',
+  k:'GET · POST · PUT · DELETE · Headers · Basic Auth · form-data · коллекции · окружения',
+  d:'postman', btn:'ОТКРЫТЬ ТЕРМИНАЛ'},
+
+ {ic:'🎓',lbl:'ЭКЗАМЕН',tag:'ЛАБОРАТОРИЯ · 13',lab:true,
+  t:'Экзаменационные билеты',
+  b:'<b>7 контрольных вопросов</b> из методички. Возьми билет, попробуй ответить сам — потом переверни и сверься.',
+  k:'Устный опрос · самопроверка перед защитой',
+  d:'exam', btn:'ВЗЯТЬ БИЛЕТ'},
+
+ {ic:'✦',lbl:'ТИТРЫ',tag:'КОНЕЦ · 14',lab:true,
+  t:'Титры',
+  b:'Практическая работа №3 «Клиент-серверная архитектура. API». Источники, границы материала и всё, что осталось сказать.',
+  k:'Спасибо за просмотр',
+  d:'credits', btn:'СМОТРЕТЬ ТИТРЫ'}
+];
+
+/* ============================================================
+   ENGINE
+   ============================================================ */
+var world=document.getElementById('world'), pkt=document.getElementById('pkt'),
+    nodesEl=document.getElementById('nodes'), wireG=document.getElementById('wireG'),
+    panel=document.getElementById('panel'), pinner=document.getElementById('pinner'),
+    track=document.getElementById('track'), plx1=document.getElementById('plx1'),
+    plx2=document.getElementById('plx2'), speed=document.getElementById('speed'),
+    stnameEl=document.getElementById('stname');
+var GAP=0, cur=0, busy=false, maxSeen=0, started=false;
+
+function vw(){return window.innerWidth;}
+var lastW=-1;
+function layout(){
+  var w=vw();
+  GAP=Math.max(330,Math.min(w*0.82,620));
+  var total=GAP*(ST.length-1)+w;
+  /* Геометрия зависит только от ширины. Открытие экранной клавиатуры и
+     скрытие адресной строки меняют лишь высоту и раньше вызывали полную
+     перестройку SVG + 14 узлов на каждое событие resize. */
+  if(w!==lastW){
+    lastW=w;
+    world.style.width=total+'px';
+    var svg=document.getElementById('wireSvg');
+    svg.setAttribute('width',total); svg.setAttribute('viewBox','0 0 '+total+' 220');
+    svg.style.width=total+'px';
+    drawWire(total);
+    [].forEach.call(nodesEl.children,function(n,i){n.style.left=nx(i)+'px';});
+  }
+  place(cur,true);
+  /* ФИКС: drawWire пересоздаёт сегменты с opacity:0, поэтому без paint()
+     после ресайза пройденный маршрут терял зелёную подсветку. */
+  paint();
+}
+/* ресайз схлопываем в один кадр — мобильные браузеры шлют его пачками */
+var rafPending=false;
+function onResize(){
+  if(rafPending) return;
+  rafPending=true;
+  requestAnimationFrame(function(){ rafPending=false; layout(); checkOrient(); });
+}
+function nx(i){return vw()/2 + GAP*i;}
+
+function drawWire(total){
+  var y=110, h='';
+  for(var i=0;i<ST.length-1;i++){
+    var x1=nx(i), x2=nx(i+1), mid=(x1+x2)/2;
+    var d='M '+x1+' '+y+' C '+mid+' '+y+', '+mid+' '+y+', '+x2+' '+y;
+    var isLab=ST[i+1].lab;
+    h+='<path class="wline'+(isLab?' wlab':'')+'" d="'+d+'"/>';
+    h+='<path class="wseg'+(isLab?' wlab-g':' wglow')+'" data-i="'+i+'" d="'+d+'" style="opacity:0"/>';
+  }
+  wireG.innerHTML=h;
+}
+
+function buildNodes(){
+  ST.forEach(function(s,i){
+    var d=document.createElement('div');
+    d.className='node'+(s.lab?' lab':'');
+    d.innerHTML='<div class="nring"></div><div class="nico">'+s.ic+'</div><div class="nlbl">'+s.lbl+'</div>';
+    d.onclick=function(){ if(!busy && i<=maxSeen) go(i); };
+    nodesEl.appendChild(d);
+  });
+  ST.forEach(function(){ var t=document.createElement('div'); t.className='seg'; track.appendChild(t); });
+  // speed lines
+  var sh='';
+  for(var i=0;i<16;i++) sh+='<i style="top:'+(6+Math.random()*88)+'%;width:'+(70+Math.random()*190)+'px;left:100%;animation-delay:'+(Math.random()*.55)+'s"></i>';
+  speed.innerHTML=sh;
+}
+
+function place(i,instant){
+  var x=nx(i);
+  if(instant){
+    world.style.transition='none'; pkt.style.transition='none';
+    /* слои параллакса тоже надо замораживать, иначе после ресайза они
+       ещё полторы секунды доезжают отдельно от трека */
+    plx1.style.transition='none'; plx2.style.transition='none';
+  }
+  world.style.transform='translateX('+(-(x-vw()/2))+'px)';
+  /* кубик — дочерний элемент #world, поэтому translateX(x) компенсирует сдвиг
+     трека и держит куб ровно по центру экрана в любой момент анимации */
+  pkt.style.transform='translateX('+x+'px)';
+  plx1.style.transform='translateX('+(-(x-vw()/2)*0.26)+'px)';
+  plx2.style.transform='translateX('+(-(x-vw()/2)*0.5)+'px)';
+  if(instant){
+    void world.offsetWidth;
+    world.style.transition=''; pkt.style.transition='';
+    plx1.style.transition=''; plx2.style.transition='';
+  }
+}
+
+function paint(){
+  [].forEach.call(nodesEl.children,function(n,i){
+    n.classList.toggle('on',i===cur);
+    n.classList.toggle('done',i<cur);
+  });
+  [].forEach.call(track.children,function(t,i){
+    t.classList.toggle('done',i<cur); t.classList.toggle('cur',i===cur);
+  });
+  [].forEach.call(wireG.querySelectorAll('.wseg'),function(p){
+    var i=+p.dataset.i, vis=i<cur;
+    p.style.opacity = vis ? '1' : '0';
+    p.classList.toggle('vis', vis);
+    p.classList.toggle('wdone', vis && !ST[i+1].lab);
+  });
+  stnameEl.textContent=ST[cur].tag;
+}
+
+function showPanel(){
+  var s=ST[cur];
+  document.getElementById('ptag').textContent=s.tag;
+  document.getElementById('ptitle').textContent=s.t;
+  document.getElementById('pbody').innerHTML=s.b;
+  document.getElementById('ptech').textContent=s.k;
+  pinner.classList.toggle('lab',!!s.lab);
+  var db=document.getElementById('dossBtn');
+  if(s.d){ db.style.display=''; db.textContent=s.btn||'ДОСЬЕ'; } else db.style.display='none';
+  document.getElementById('backBtn').style.display = cur>0?'':'none';
+  var nb=document.getElementById('nextBtn');
+  nb.style.display = cur<ST.length-1?'':'none';
+  panel.classList.add('on');
+  // scroll affordance
+  var pb=document.getElementById('pbody');
+  setTimeout(function(){
+    document.getElementById('pbodywrap')
+      .classList.toggle('scrollable', pb.scrollHeight > pb.clientHeight+4);
+  },40);
+  pb.onscroll=function(){
+    document.getElementById('pbodywrap')
+      .classList.toggle('scrollable', pb.scrollHeight - pb.scrollTop > pb.clientHeight+4);
+  };
+  pb.scrollTop=0;
+  // packet skin
+  pkt.className='on'+(s.skin?' '+s.skin:'');
+}
+
+function go(i){
+  /* ФИКС: свайп ловился на document ещё на стартовом экране — маршрут
+     уезжал вперёд, и после запуска панель показывала не ту станцию. */
+  if(!started||busy||i<0||i>=ST.length||i===cur) return;
+  var dir = i>cur;
+  busy=true; panel.classList.remove('on');
+  if(dir) speed.classList.add('on');
+  var dist=Math.abs(i-cur), dur=Math.min(1700,760+dist*380);
+  /* Трек и кубик двигаются на ОДНОЙ кривой и с ОДНОЙ задержкой — иначе они
+     расходятся по фазе на середине перелёта, и кубик визуально "улетает"
+     в сторону от центра (особенно заметно при движении назад). */
+  var EASE='cubic-bezier(.5,.02,.32,1)';
+  world.style.transition='transform '+dur+'ms '+EASE+' 90ms';
+  pkt.style.transition='transform '+dur+'ms '+EASE+' 90ms';
+  plx1.style.transition='transform '+dur+'ms '+EASE+' 90ms';
+  plx2.style.transition='transform '+dur+'ms '+EASE+' 90ms';
+  cur=i; if(cur>maxSeen) maxSeen=cur;
+  place(cur,false); paint();
+  setTimeout(function(){ speed.classList.remove('on'); busy=false; showPanel(); }, dur+150);
+}
+
+/* ============ INTRO / TRANSFORM ============ */
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+var launching=false;
+function startJourney(){
+  /* ФИКС: двойной клик по «Отправить» или удержание Enter запускали
+     цепочку таймеров дважды — сцена трансформации проигрывалась внахлёст. */
+  if(launching||started) return;
+  launching=true;
+  var sendBtn=document.getElementById('send'); if(sendBtn) sendBtn.disabled=true;
+  var v=document.getElementById('msg').value.trim();
+  USER_MSG = v || 'Привет, сервер!';
+  var intro=document.getElementById('intro'), xf=document.getElementById('xform'),
+      xj=document.getElementById('xjson'), cap=document.getElementById('xcap');
+  intro.classList.add('gone');
+  setTimeout(function(){
+    intro.style.display='none'; xf.classList.add('on');
+    var lines=[
+      '<span class="p">{</span>',
+      '  <span class="k">"message"</span>: <span class="s">"'+esc(USER_MSG)+'"</span>,',
+      '  <span class="k">"user"</span>: <span class="s">"student@dstu"</span>,',
+      '  <span class="k">"method"</span>: <span class="s">"POST"</span>,',
+      '  <span class="k">"ts"</span>: <span class="n">'+Date.now()+'</span>',
+      '<span class="p">}</span>'
+    ];
+    xj.innerHTML=lines.map(function(l,i){
+      return '<div style="animation-delay:'+(i*0.11)+'s">'+l+'</div>';
+    }).join('');
+    cap.textContent='СЕРИАЛИЗАЦИЯ · ТЕКСТ → JSON';
+    setTimeout(function(){cap.classList.add('on');},300);
+    setTimeout(function(){
+      cap.textContent='УПАКОВКА В БАЙТЫ';
+      xj.classList.add('crush');
+      document.getElementById('xflash').classList.add('go');
+    },1750);
+    setTimeout(function(){
+      xf.classList.remove('on'); cap.classList.remove('on');
+      // face 1 of the cube carries the user's message
+      document.getElementById('cube').children[0].textContent=
+        USER_MSG.length>13?USER_MSG.slice(0,12)+'…':USER_MSG;
+      pkt.classList.add('on');
+      cur=0; maxSeen=0; started=true; launching=false;
+      place(0,true); paint(); showPanel();
+    },2600);
+  },820);
+}
+
+/* ============ FULLSCREEN ============ */
+function fsNotice(txt){
+  ['fsBtn','fsBtn2'].forEach(function(id){
+    var b=document.getElementById(id); if(!b) return;
+    if(b.dataset.orig===undefined) b.dataset.orig=b.textContent;
+    b.textContent=txt;
+    setTimeout(function(){ b.textContent=b.dataset.orig; },2600);
+  });
+}
+function toggleFS(){
+  var el=document.documentElement;
+  try{
+    if(!document.fullscreenElement && !document.webkitFullscreenElement){
+      var req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if(!req){ fsNotice('НЕ ПОДДЕРЖИВАЕТСЯ — ИГРАЙ ТАК'); return; }
+      var p = req.call(el);
+      if(p && p.then) p.then(lockLand).catch(function(){ fsNotice('ЗАБЛОКИРОВАНО — ИГРАЙ ТАК'); });
+      else setTimeout(lockLand,300);
+    } else {
+      (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
+    }
+  }catch(e){ fsNotice('НЕ ПОДДЕРЖИВАЕТСЯ — ИГРАЙ ТАК'); }
+}
+function lockLand(){
+  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){}); }catch(e){}
+}
+var skipOrientCheck=false;
+function skipRotate(){
+  skipOrientCheck=true;
+  var r=document.getElementById('rotate');
+  if(r) r.classList.remove('show');
+}
+function checkOrient(){
+  var r=document.getElementById('rotate');
+  if(!r) return;
+  if(skipOrientCheck){ r.classList.remove('show'); return; }
+  var portrait = window.innerHeight > window.innerWidth;
+  var smallish = Math.min(window.innerWidth,window.innerHeight) < 560;
+  r.classList.toggle('show', portrait && smallish);
+}
+
+/* ============ MODALS ============ */
+var modal=document.getElementById('modal'), mbody=document.getElementById('mbody'),
+    mtitle=document.getElementById('mtitle'), mtag=document.getElementById('mtag');
+function openModal(kind){
+  var D=DOSSIER[kind]; if(!D) return;
+  mtag.textContent=D.tag; mtitle.textContent=D.title;
+  mbody.innerHTML=D.html();
+  modal.classList.add('on');
+  if(D.init) D.init();
+}
+function closeModal(){
+  modal.classList.remove('on');
+  /* освобождаем DOM досье: терминал и 7 билетов с 3D-трансформами
+     держатся в памяти без нужды, а при повторном открытии всё равно
+     собираются заново */
+  mbody.innerHTML='';
+}
+
+/* ============================================================
+   DOSSIER CONTENT
+   ============================================================ */
+var DOSSIER={};
+
+DOSSIER.cs={tag:'ДОСЬЕ',title:'Клиент, сервер и контракт между ними',html:function(){return ''+
+'<div class="dgrid">'+
+'<div class="dcard" style="--c:#1fe0ff"><h4>Клиент</h4><p>Инициирует запрос и отвечает за представление данных. Браузер, мобильное приложение, Postman — или другой сервер.</p><p>Диалог всегда начинает он.</p></div>'+
+'<div class="dcard" style="--c:#a06bff"><h4>Сервер</h4><p>Хранит данные и бизнес-логику. Ждёт запросы, обрабатывает, отвечает. Сам первым не пишет.</p><p>Один сервер обслуживает тысячи клиентов одновременно.</p></div>'+
+'<div class="dcard" style="--c:#00ff9d"><h4>API как контракт</h4><p>Клиенту нельзя в базу напрямую: это небезопасно и невозможно поддерживать. Сервер публикует набор точек входа с правилами обращения.</p><p><b>Пока контракт соблюдается, внутренности сервера можно переписать полностью</b> — клиент не заметит.</p></div>'+
+'</div>';}};
+
+DOSSIER.json={tag:'ДОСЬЕ',title:'JSON и XML — языки, на которых говорят машины',html:function(){return ''+
+'<div class="dgrid">'+
+'<div class="dcard" style="--c:#00ff9d"><h4>JSON</h4><p>JavaScript Object Notation. Пары «ключ — значение», вложенные объекты и массивы. Компактный, читается человеком, парсится нативно почти везде. Стандарт де-факто для REST API.</p>'+
+'<pre class="code">{\n  <span style="color:#1fe0ff">"username"</span>: <span style="color:#00ff9d">"test_user"</span>,\n  <span style="color:#1fe0ff">"age"</span>: <span style="color:#ffb52e">19</span>,\n  <span style="color:#1fe0ff">"active"</span>: <span style="color:#ff2d78">true</span>\n}</pre></div>'+
+'<div class="dcard" style="--c:#a06bff"><h4>XML</h4><p>eXtensible Markup Language. Данные в виде дерева тегов. Многословнее, зато поддерживает схемы XSD, namespace и строгую валидацию структуры. Обязателен в SOAP.</p>'+
+'<pre class="code">&lt;<span style="color:#a06bff">user</span>&gt;\n  &lt;<span style="color:#a06bff">username</span>&gt;test_user&lt;/<span style="color:#a06bff">username</span>&gt;\n  &lt;<span style="color:#a06bff">age</span>&gt;19&lt;/<span style="color:#a06bff">age</span>&gt;\n&lt;/<span style="color:#a06bff">user</span>&gt;</pre></div>'+
+'</div>'+
+'<div class="dcard" style="margin-top:11px;--c:#ffb52e"><h4>Почему это важно на практике</h4><p>Тот же объект в XML занимает примерно <b>вдвое больше байт</b>. На миллионах запросов в сутки это реальные деньги за трафик — одна из причин, почему REST + JSON вытеснили SOAP + XML в публичных API.</p><p>В Postman вкладка <b>Pretty</b> форматирует JSON-ответ, <b>Raw</b> показывает как есть, <b>Preview</b> рендерит как в браузере.</p></div>';}};
+
+DOSSIER.http={tag:'ДОСЬЕ',title:'HTTP-методы, REST и SOAP',html:function(){return ''+
+'<div class="dgrid">'+
+'<div class="dcard" style="--c:#00ff9d"><h4>GET</h4><p>Получить данные. Параметры едут в URL после «?». Ничего не меняет.</p><p style="color:#4a5875;font-size:11px">Безопасный · идемпотентный</p></div>'+
+'<div class="dcard" style="--c:#ffb52e"><h4>POST</h4><p>Создать новое. Данные в теле запроса, а не в ссылке — поэтому подходит для паролей и файлов.</p><p style="color:#4a5875;font-size:11px">Изменяет · НЕ идемпотентный</p></div>'+
+'<div class="dcard" style="--c:#1fe0ff"><h4>PUT</h4><p>Обновить целиком. Повтори сто раз — результат тот же.</p><p style="color:#4a5875;font-size:11px">Изменяет · идемпотентный</p></div>'+
+'<div class="dcard" style="--c:#ff4455"><h4>DELETE</h4><p>Удалить ресурс. Повторный вызов ничего не находит, но и не ломает.</p><p style="color:#4a5875;font-size:11px">Изменяет · идемпотентный</p></div>'+
+'</div>'+
+'<div class="dcard" style="margin-top:11px;--c:#ffb52e"><h4>Зачем знать про идемпотентность</h4><p>Это свойство «повторный вызов не навредит». Не академическая придирка: на нём держатся <b>автоматические повторы запросов при обрыве связи</b>. GET и PUT повторять безопасно, POST — нет, иначе вместо одного заказа появится три.</p></div>'+
+'<div class="dgrid" style="margin-top:11px">'+
+'<div class="dcard" style="--c:#1fe0ff"><h4>REST</h4><ul><li>Архитектурный стиль, а не протокол</li><li>Только HTTP/HTTPS</li><li>Обычно JSON</li><li>Стандартные методы GET/POST/PUT/DELETE</li><li>Stateless — сервер не помнит клиента</li><li>Лёгкий, быстрый, кэшируется</li></ul><div class="dfoot">Веб, мобильные приложения, публичные API, микросервисы</div></div>'+
+'<div class="dcard" style="--c:#a06bff"><h4>SOAP</h4><ul><li>Строгий протокол со спецификацией W3C</li><li>HTTP, а также SMTP, TCP, JMS</li><li>Только XML в конверте Envelope</li><li>Операции описаны в WSDL-контракте</li><li>Умеет stateful</li><li>WS-Security, транзакции, валидация</li></ul><div class="dfoot">Банки, платёжные шлюзы, страхование, госсистемы</div></div>'+
+'</div>'+
+'<div class="dcard" style="margin-top:11px;--c:#00ff9d"><h4>Короткий ответ для защиты</h4><p>SOAP тяжелее, но даёт гарантии и строгий контракт — поэтому выжил там, где ошибка стоит денег. REST легче и гибче — поэтому на нём построен почти весь современный веб. Это <b>не «устаревшее против нового»</b>, а разные инструменты под разную цену ошибки.</p></div>';}};
+
+DOSSIER.auth={tag:'ДОСЬЕ',title:'Аутентификация и авторизация',html:function(){return ''+
+'<div class="dcard" style="--c:#1fe0ff;margin-bottom:11px"><h4>Два слова, которые постоянно путают</h4><p><b style="color:#1fe0ff">Аутентификация</b> отвечает на вопрос «кто ты?» — проверка личности. <b style="color:#ff2d78">Авторизация</b> отвечает «что тебе можно?» — проверка прав.</p><p>Пропуск на проходной — аутентификация. Список этажей, куда он открывает дверь, — авторизация.</p></div>'+
+'<div class="dgrid">'+
+'<div class="dcard" style="--c:#ffb52e"><h4>Basic Auth</h4><p>Логин и пароль через двоеточие, закодированные в Base64, в заголовке Authorization. Это задание №5 практической.</p><div class="dfoot"><b>Осторожно:</b> Base64 — кодирование, а не шифрование. Разворачивается одной командой. Только поверх HTTPS.</div></div>'+
+'<div class="dcard" style="--c:#00ff9d"><h4>API Key</h4><p>Строка-идентификатор приложения в заголовке или параметре. Отвечает «какое приложение стучится», но не «какой пользователь».</p><div class="dfoot">Хороша для квот и тарификации. Утёкший ключ работает вечно, пока его не отзовут.</div></div>'+
+'<div class="dcard" style="--c:#a06bff"><h4>OAuth 2.0 + OIDC</h4><p>Делегированный доступ: приложение получает доступ к твоим данным, не получая пароль. Это кнопка «Войти через Google».</p><div class="dfoot">OAuth решает авторизацию, OpenID Connect добавляет сверху аутентификацию.</div></div>'+
+'<div class="dcard" style="--c:#ff4455"><h4>mTLS</h4><p>Взаимный TLS: сертификат предъявляют <b>обе</b> стороны. Не только клиент проверяет сервер, но и сервер клиента.</p><div class="dfoot">Золотой стандарт для связи сервис-сервис и банковских интеграций. Дорог из-за ротации сертификатов.</div></div>'+
+'</div>'+
+'<div class="dcard" style="margin-top:11px;--c:#1fe0ff"><h4>Анатомия JWT</h4>'+
+'<div class="jwtline"><span class="a">eyJhbGciOiJIUzI1NiJ9</span><span class="d">.</span><span class="b">eyJzdWIiOiIxMjMiLCJyb2xlIjoiYWRtaW4ifQ</span><span class="d">.</span><span class="c">SflKxwRJSMeKKF2QT4fwpM</span></div>'+
+'<div class="dgrid">'+
+'<div class="dcard" style="--c:#ff2d78"><h4 style="font-size:12px">HEADER</h4><p style="font-size:11.5px">Алгоритм подписи и тип токена. Например HS256 или RS256.</p></div>'+
+'<div class="dcard" style="--c:#a06bff"><h4 style="font-size:12px">PAYLOAD</h4><p style="font-size:11.5px">Кто пользователь, какая роль, когда истекает. Закодировано, но <b style="color:#ffb52e">не зашифровано</b> — секреты сюда класть нельзя.</p></div>'+
+'<div class="dcard" style="--c:#1fe0ff"><h4 style="font-size:12px">SIGNATURE</h4><p style="font-size:11.5px">Подпись первых двух частей. Поменял payload — подпись не сходится, шлюз отклоняет токен.</p></div>'+
+'</div>'+
+'<div class="dfoot" style="margin-top:9px">Главный трюк: токен <b>самодостаточен</b>. Шлюз проверяет подпись локально, не ходя в базу за сессией. Именно поэтому JWT масштабируется.</div></div>';}};
+
+DOSSIER.owasp={tag:'ДОСЬЕ',title:'OWASP API Security Top 10 — 2023',html:function(){
+var R=[['API1','Broken Object Level Authorization (BOLA)','Подменил чужой ID в запросе — получил чужие данные. Самая частая и самая простая в эксплуатации дыра.',1],
+['API2','Broken Authentication','Слабый вход: угоняемые токены, нет защиты от перебора, вечные сессии.',1],
+['API3','Broken Object Property Level Authorization','API отдаёт лишние поля объекта или позволяет записать те, что менять нельзя.',1],
+['API4','Unrestricted Resource Consumption','Нет лимитов — отказ в обслуживании или счёт за облако на миллион.',0],
+['API5','Broken Function Level Authorization','Обычный пользователь дотягивается до админских функций из-за путаницы в ролях.',1],
+['API6','Unrestricted Access to Sensitive Business Flows','Бизнес-сценарий автоматизируют ботами во вред бизнесу. Багов в коде при этом нет.',0],
+['API7','Server Side Request Forgery','API ходит по URL от пользователя — и его заставляют стучаться во внутреннюю сеть.',0],
+['API8','Security Misconfiguration','Забытые дефолты, открытый CORS, стектрейсы в ответах.',0],
+['API9','Improper Inventory Management','Никто не помнит, что версия v1 жива на отдельном хосте. Она и становится входом.',0],
+['API10','Unsafe Consumption of APIs','Своим данным не доверяем, а ответу стороннего API — почему-то да.',0]];
+return '<div class="dcard" style="--c:#ffb52e;margin-bottom:11px"><h4>Три риска из первой пятёрки — про авторизацию</h4><p>По данным OWASP это главная боль современных API. Отмечены жёлтой полосой.</p></div>'+
+R.map(function(r){return '<div class="drow'+(r[3]?' au':'')+'"><span class="did">'+r[0]+'</span><span><b>'+r[1]+'</b><span>'+r[2]+'</span></span></div>';}).join('')+
+'<div class="dcard" style="margin-top:11px;--c:#ff4455"><h4>Что закрывает шлюз, а что нет</h4><p>Шлюз хорошо решает <b>API4</b> (лимиты), <b>API8</b> (единая конфигурация), <b>API9</b> (инвентаризация) и частично <b>API2</b> (проверка токенов).</p><p><b style="color:#ffb52e">Но BOLA он не закроет никогда</b> — шлюз не знает, какой объект чей. Проверку «этот пользователь имеет право на этот конкретный заказ» обязан делать сам сервис. Gateway — не серебряная пуля, а первый рубеж.</p></div>';}};
+
+DOSSIER.giants={tag:'ДОСЬЕ',title:'Как это решают крупные компании',html:function(){return ''+
+'<div class="dgrid">'+
+'<div class="dcard" style="--c:#ff4455"><h4>Netflix Zuul</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">OPEN SOURCE · JAVA + NETTY</p><ul><li>Парадная дверь для всего трафика с телевизоров, телефонов и браузеров к бэкенду Netflix</li><li>Zuul 1 — модель «поток на запрос», фильтры PRE / ROUTE / POST / ERROR</li><li>Zuul 2 переписан на Netty с event loop на ядро: фильтры Inbound / Endpoint / Outbound</li><li>Железное правило разработчика фильтра — <b>никогда не блокировать event loop</b></li><li>Динамическая маршрутизация, сброс нагрузки, стресс-тесты на живом трафике</li></ul><div class="dfoot">Apache 2.0, репозиторий с марта 2013. Версия <b>4.1.4</b> — 10 сентября 2026.</div></div>'+
+'<div class="dcard" style="--c:#ffb52e"><h4>Amazon API Gateway</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">MANAGED · AWS</p><ul><li>Полностью управляемый: своей инфраструктуры не нужно</li><li>Три типа API: REST, HTTP (дешевле), WebSocket</li><li>Авторизация через IAM, Cognito, OAuth2/OIDC или Lambda authorizer</li><li>Троттлинг, usage plans с API-ключами, кэш, интеграция с WAF</li><li>Стандартный фасад для serverless: маршрут → Lambda</li></ul><div class="dfoot">SLA <b>99.95%</b>. Сентябрь 2026, US East: HTTP API <b>$1.00</b>/млн, REST API <b>$3.50</b>/млн. Лимит ответа 29 МБ.</div></div>'+
+'<div class="dcard" style="--c:#00ff9d"><h4>Kong</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">OPEN SOURCE · OPENRESTY</p><ul><li>Самый распространённый самоуправляемый шлюз</li><li>Более <b>150 плагинов</b>: JWT, OAuth 2.0, OIDC, LDAP, API-key, mTLS</li><li>Rate limiting в трёх режимах: local, cluster, redis</li><li>Конфигурация в PostgreSQL или полностью DB-less</li><li>Родная интеграция с Kubernetes через Ingress Controller</li></ul><div class="dfoot">Apache 2.0. Плагины на Lua и Go. Выбор при мультиоблаке и больших объёмах.</div></div>'+
+'<div class="dcard" style="--c:#1fe0ff"><h4>Google Apigee</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">MANAGED · ENTERPRISE</p><ul><li>Не просто шлюз, а платформа управления жизненным циклом API</li><li>Портал разработчика, регистрация приложений, версионирование, монетизация</li><li>Политики на XML: трансформация, аутентификация, квоты</li><li>Сильная сторона — аналитика трафика и федеративное управление</li><li>Apigee X (SaaS), hybrid, Edge (legacy)</li></ul><div class="dfoot">От <b>$2 500 в месяц</b>, крупные внедрения от $100k в год. Не инструмент для небольшой команды.</div></div>'+
+'<div class="dcard" style="--c:#a06bff"><h4>Envoy</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">OPEN SOURCE · C++ L7 PROXY</p><ul><li>Высокопроизводительный прокси уровня L7</li><li>Динамическая конфигурация через xDS — маршруты меняются без перезапуска</li><li>Лежит в основе Istio, Consul Connect и AWS App Mesh</li><li>Максимальная гибкость ценой сложности: нужен отдельный control plane</li></ul><div class="dfoot">Выбор компаний с собственной платформенной командой.</div></div>'+
+'<div class="dcard" style="--c:#ff2d78"><h4>Gateway ≠ Service Mesh</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">ВАЖНОЕ РАЗЛИЧИЕ ДЛЯ ЗАЩИТЫ</p><ul><li><b>API Gateway</b> — граница «север — юг»: между внешними клиентами и системой</li><li><b>Service Mesh</b> — «запад — восток»: между сервисами внутри периметра</li><li>Не конкуренты: крупные системы используют оба слоя сразу</li><li>Reverse proxy маршрутизирует; шлюз добавляет авторизацию, лимиты, валидацию схем, портал</li></ul><div class="dfoot">Главный риск шлюза — <b>централизация</b>: он снимает дублирование со всех сервисов, но его отказ становится отказом всей системы.</div></div>'+
+'</div>';}};
+
+DOSSIER.server={tag:'ДОСЬЕ',title:'Обработка HTTP-запроса на сервере',html:function(){
+var S=[['1','Приём соединения','Веб-сервер принимает TCP-соединение и расшифровывает TLS.'],
+['2','Парсинг','Разбирает HTTP-запрос: метод, путь, заголовки, тело.'],
+['3','Маршрутизация','Определяет, какой обработчик отвечает за эту пару «метод + путь».'],
+['4','Middleware','Цепочка промежуточных слоёв: аутентификация, проверка прав, валидация входных данных, логирование.'],
+['5','Бизнес-логика','Выполняется сам обработчик, при необходимости с запросами к базе данных.'],
+['6','Сериализация ответа','Результат превращается в JSON или XML, добавляется статус-код и заголовки.'],
+['7','Отправка','Ответ уходит клиенту, соединение закрывается или переиспользуется.']];
+return S.map(function(s){return '<div class="drow"><span class="did" style="color:#1fe0ff">'+s[0]+'</span><span><b>'+s[1]+'</b><span>'+s[2]+'</span></span></div>';}).join('')+
+'<div class="dcard" style="margin-top:11px;--c:#a06bff"><h4>Где здесь шлюз</h4><p>В крупных системах шаги <b>1, 3 и 4</b> частично выносят на API Gateway — отдельный слой перед сервисами, чтобы не дублировать эту логику в каждом из сотни микросервисов.</p></div>';}};
+
+/* ---------- POSTMAN ---------- */
+var PM_HDRS={"host":"postman-echo.com","accept":"*/*","accept-encoding":"gzip, deflate, br","user-agent":"PostmanRuntime/7.39.0"};
+function mix(o){var r={},k;for(k in PM_HDRS)r[k]=PM_HDRS[k];for(k in o)r[k]=o[k];return r;}
+var PMT=[
+{n:'1 · GET + params',m:'GET',u:'https://postman-echo.com/get?name=Ivan&age=19',sec:'PARAMS',
+ req:[['name','Ivan'],['age','19']],
+ h:'Параметры GET-запроса едут прямо в URL после «?» и разделяются «&». Postman собирает эту строку за тебя из вкладки Params. Сервер возвращает их в поле args — так видно, что именно до него долетело.',
+ r:{args:{age:"19",name:"Ivan"},headers:PM_HDRS,url:"https://postman-echo.com/get?name=Ivan&age=19"}},
+{n:'2 · POST JSON',m:'POST',u:'https://postman-echo.com/post',sec:'BODY · RAW · JSON',
+ body:'{\n  "username": "test_user",\n  "password": "12345"\n}',
+ h:'Данные едут в теле запроса, а не в адресе. Именно поэтому POST используют для паролей: тело не попадает в историю браузера и в логи прокси. Сервер разобрал JSON и вернул его в поле json.',
+ r:{args:{},data:{username:"test_user",password:"12345"},files:{},form:{},
+    headers:mix({"content-type":"application/json","content-length":"52"}),
+    json:{username:"test_user",password:"12345"},url:"https://postman-echo.com/post"}},
+{n:'3 · Params в URL',m:'GET',u:'https://postman-echo.com/get?city=London&country=UK',sec:'PARAMS',
+ req:[['city','London'],['country','UK']],
+ h:'То же, что задание 1, но с другими параметрами. Если снять галочку с параметра во вкладке Params, Postman исключит его из запроса — удобно, чтобы не удалять строку целиком.',
+ r:{args:{city:"London",country:"UK"},headers:PM_HDRS,url:"https://postman-echo.com/get?city=London&country=UK"}},
+{n:'4 · Headers',m:'GET',u:'https://postman-echo.com/headers',sec:'HEADERS',
+ req:[['User-Agent','PostmanTest'],['Custom-Header','HelloWorld']],
+ h:'Заголовки — метаданные запроса: формат данных, язык, версия API, токены авторизации. Эндпоинт /headers возвращает всё, что получил — видно, что сервер принял оба заголовка.',
+ r:{headers:{host:"postman-echo.com","user-agent":"PostmanTest","custom-header":"HelloWorld",accept:"*/*","accept-encoding":"gzip, deflate, br"}}},
+{n:'5 · Basic Auth',m:'GET',u:'https://postman-echo.com/basic-auth',sec:'AUTHORIZATION · BASIC',
+ req:[['Username','postman'],['Password','password'],['→ Заголовок','Authorization: Basic cG9zdG1hbjpwYXNzd29yZA==']],
+ h:'Postman склеил «postman:password», закодировал в Base64 и положил в заголовок Authorization. Это кодирование, а не шифрование — строка разворачивается обратно одной командой. Поэтому Basic Auth допустим только поверх HTTPS.',
+ r:{authenticated:true}},
+{n:'6 · PUT',m:'PUT',u:'https://postman-echo.com/put',sec:'BODY · RAW · JSON',
+ body:'{\n  "id": 1,\n  "status": "updated"\n}',
+ h:'PUT обновляет ресурс целиком и идемпотентен: отправь десять раз — состояние сервера будет как после первого. Поэтому PUT безопасно повторять при обрыве связи.',
+ r:{args:{},data:{id:1,status:"updated"},files:{},form:{},
+    headers:mix({"content-type":"application/json","content-length":"38"}),
+    json:{id:1,status:"updated"},url:"https://postman-echo.com/put"}},
+{n:'7 · DELETE',m:'DELETE',u:'https://postman-echo.com/delete',sec:'BODY · RAW · JSON',
+ body:'{\n  "id": 123\n}',
+ h:'DELETE удаляет ресурс и тоже идемпотентен: повторный вызов вернёт «уже нет такого», но ничего не сломает. Тестовый сервер postman-echo ничего реально не удаляет — он отражает полученное.',
+ r:{args:{},data:{id:123},files:{},form:{},
+    headers:mix({"content-type":"application/json","content-length":"16"}),
+    json:{id:123},url:"https://postman-echo.com/delete"}},
+{n:'8 · Файл form-data',m:'POST',u:'https://postman-echo.com/post',sec:'BODY · FORM-DATA',
+ req:[['file','report.pdf (File)'],['Content-Type','multipart/form-data']],
+ h:'Чтобы отправить файл, во вкладке Body выбирают form-data и меняют тип параметра с Text на File. Загруженный файл сервер возвращает в секции files. Схема работает с любыми типами файлов.',
+ r:{args:{},data:{},files:{"report.pdf":"data:application/pdf;base64,JVBERi0xLjQKJ..."},form:{},
+    headers:mix({"content-type":"multipart/form-data; boundary=------7356"}),url:"https://postman-echo.com/post"}},
+{n:'9 · Коллекция',m:'GET',u:'{{baseUrl}}/get · Collection: Test API',sec:'COLLECTION',
+ req:[['Коллекция','Test API'],['Запросов внутри','4'],['Путь','New → Collection → Save']],
+ h:'Коллекция — папка сохранённых запросов. Вместо того чтобы каждый раз набирать URL заново, открываешь сохранённый запрос и жмёшь Send. Коллекцию можно экспортировать целиком и передать другому разработчику.',
+ r:{collection:"Test API",saved_requests:["GET /get","POST /post","PUT /put","DELETE /delete"],status:"ready"}},
+{n:'10 · Окружение',m:'GET',u:'{{baseUrl}}/get',sec:'ENVIRONMENT',
+ req:[['Окружение','Test Environment'],['baseUrl','https://postman-echo.com'],['Итоговый URL','https://postman-echo.com/get']],
+ h:'Переменная {{baseUrl}} подставляется из окружения. Смысл: переключил окружение с Test на Production — и все запросы коллекции пошли на боевой сервер. Ни один URL править вручную не нужно.',
+ r:{args:{},headers:PM_HDRS,url:"https://postman-echo.com/get",_resolved:{"{{baseUrl}}":"https://postman-echo.com"}}}
+];
+var MCOL={GET:'#00ff9d',POST:'#ffb52e',PUT:'#1fe0ff',DELETE:'#ff4455'};
+function jhl(o){
+  var s=JSON.stringify(o,null,2).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  s=s.replace(/"([^"]+)":/g,'"<span class="jk">$1</span>":');
+  s=s.replace(/: "([^"]*)"/g,': "<span class="jv">$1</span>"');
+  s=s.replace(/: (\d+)(,?)$/gm,': <span class="jn">$1</span>$2');
+  s=s.replace(/: (true|false)/g,': <span class="jb">$1</span>');
+  return s;
+}
+DOSSIER.postman={tag:'ЛАБОРАТОРИЯ',title:'Терминал Postman — 10 заданий',
+html:function(){return ''+
+'<div class="pmtasks" id="pmt"></div>'+
+'<div class="pmwrap">'+
+ '<div class="pmcol"><div class="pmurl"><div class="pmm" id="pmm">GET</div>'+
+ '<div class="pmu" id="pmu"></div><button class="pmsend" id="pms">Send</button></div>'+
+ '<div class="pmsec"><div class="lbl" id="pmsecl">PARAMS</div><div id="pmreq"></div></div></div>'+
+ '<div class="pmcol"><div class="pmsec"><div class="pmstat" id="pmstat">'+
+ '<span style="color:#4a5875">// нажми Send</span></div>'+
+ '<div class="pmout" id="pmout"></div></div></div>'+
+'</div>'+
+'<div class="pmhint" id="pmh"></div>';},
+init:function(){
+  var t=document.getElementById('pmt'),cur=0;
+  function load(i){
+    cur=i; var x=PMT[i];
+    [].forEach.call(t.children,function(b,j){b.classList.toggle('on',j===i);});
+    var m=document.getElementById('pmm');
+    m.textContent=x.m; m.style.color=MCOL[x.m];
+    m.style.borderColor=MCOL[x.m]+'55'; m.style.background=MCOL[x.m]+'12';
+    document.getElementById('pmu').textContent=x.u;
+    document.getElementById('pmsecl').textContent=x.sec;
+    document.getElementById('pmreq').innerHTML = x.body
+      ? '<pre>'+x.body.replace(/</g,'&lt;')+'</pre>'
+      : x.req.map(function(r){return '<div class="kv"><b>'+r[0]+'</b><span>'+r[1]+'</span></div>';}).join('');
+    document.getElementById('pmstat').innerHTML='<span style="color:#4a5875">// нажми Send</span>';
+    document.getElementById('pmout').innerHTML='';
+    document.getElementById('pmh').innerHTML='<b>ЧТО ЗДЕСЬ ПРОИСХОДИТ</b>'+x.h;
+  }
+  PMT.forEach(function(x,i){
+    var b=document.createElement('button'); b.type='button'; b.textContent=x.n;
+    b.onclick=function(){load(i);}; t.appendChild(b);
+  });
+  document.getElementById('pms').onclick=function(){
+    var btn=this,x=PMT[cur]; btn.disabled=true;
+    var out=document.getElementById('pmout'), stat=document.getElementById('pmstat');
+    out.innerHTML='<span style="color:#4a5875">// отправка...</span>';
+    stat.innerHTML='';
+    var ms=320+Math.random()*280;
+    setTimeout(function(){
+      /* окно могли закрыть до «ответа» — тогда узлы уже отсоединены */
+      if(!btn.isConnected||!out.isConnected) return;
+      stat.innerHTML=
+        '<span>Status: <b>200 OK</b></span><span>Time: <i>'+Math.round(ms)+' ms</i></span>'+
+        '<span>Size: <i>'+(JSON.stringify(x.r).length/1024).toFixed(2)+' KB</i></span>'+
+        '<span><i>Pretty</i> · Raw · Preview</span>';
+      out.innerHTML=jhl(x.r);
+      btn.disabled=false;
+    },ms);
+  };
+  load(0);
+}};
+
+/* ---------- EXAM ---------- */
+var QS=[
+['Что такое клиент-серверная архитектура и как она связана с API?',
+ ['Модель, где система разделена на две роли. <b>Клиент</b> (браузер, мобильное приложение, Postman) инициирует запрос и отвечает за представление данных. <b>Сервер</b> хранит данные и бизнес-логику, ждёт запросы, обрабатывает и возвращает ответ. Сервер сам диалог не начинает.',
+  'Связь с API прямая: клиенту запрещено обращаться к базе данных напрямую. Сервер публикует <b>API</b> — строго описанный набор точек входа. API это контракт: пока он соблюдается, внутреннюю реализацию сервера можно переписать полностью, и клиент не заметит.']],
+['В чём разница между REST и SOAP API?',
+ ['<b>REST</b> — архитектурный стиль, а не протокол. Работает поверх HTTP, использует его стандартные методы, обменивается обычно JSON, всегда stateless. Лёгкий, быстрый, кэшируется.',
+  '<b>SOAP</b> — строгий протокол со спецификацией W3C. Только XML в конверте Envelope, операции описаны в WSDL, может работать поверх SMTP или TCP. Тяжелее, зато даёт WS-Security, транзакции и жёсткую валидацию.',
+  'Вывод: REST — для веба, мобильных и публичных API. SOAP остался там, где цена ошибки высока: банки, платёжные системы, страхование, госсервисы.']],
+['Какое значение имеет метод HTTP в запросах к API? Приведите примеры методов.',
+ ['Метод — это <b>глагол запроса</b>. URL говорит, с каким ресурсом работаем, метод — что именно с ним делать. Один адрес ведёт себя по-разному в зависимости от метода.',
+  '<b>GET</b> — получить, параметры в URL, ничего не меняет. <b>POST</b> — создать, данные в теле. <b>PUT</b> — обновить целиком. <b>DELETE</b> — удалить. Также PATCH, HEAD, OPTIONS.',
+  'Важное свойство — <b>идемпотентность</b>: повторный вызов не меняет результат. GET, PUT, DELETE идемпотентны, POST — нет. На этом построены автоматические повторы при обрыве связи.']],
+['Как клиент взаимодействует с сервером через API? Приведите пример запроса.',
+ ['Клиент формирует HTTP-запрос из четырёх частей: <b>метод</b>, <b>URL</b>, <b>заголовки</b> и опционально <b>тело</b>. Запрос уходит на сервер, сервер обрабатывает и возвращает ответ со статус-кодом и данными.',
+  'Пример из задания №2 практической:',
+  '<code>POST https://postman-echo.com/post</code><br><code>Content-Type: application/json</code><br><code>{ "username": "test_user", "password": "12345" }</code>',
+  'Сервер отвечает <b>200 OK</b> и возвращает JSON, где в поле <code>json</code> лежат отправленные данные, а в <code>headers</code> — полученные заголовки.']],
+['Что такое JSON и XML, и как они используются при работе с API?',
+ ['Оба — текстовые форматы сериализации. Нужны, чтобы клиент и сервер на разных языках поняли друг друга.',
+  '<b>JSON</b> — пары «ключ — значение», вложенные объекты и массивы. Компактный, читаемый, нативно парсится почти везде. Стандарт де-факто для REST.',
+  '<b>XML</b> — дерево тегов. Многословнее, но поддерживает схемы XSD, namespace и строгую валидацию. Обязателен в SOAP.',
+  'На практике тот же объект в XML занимает вдвое больше байт. В Postman <b>Pretty</b> форматирует ответ, <b>Raw</b> показывает как есть, <b>Preview</b> рендерит как в браузере.']],
+['Как происходит обработка HTTP-запросов на стороне сервера?',
+ ['<b>1.</b> Веб-сервер принимает TCP-соединение и расшифровывает TLS. <b>2.</b> Парсит запрос: метод, путь, заголовки, тело. <b>3.</b> Маршрутизация — какой обработчик отвечает за эту пару «метод + путь».',
+  '<b>4.</b> Цепочка middleware: аутентификация, проверка прав, валидация, логирование. <b>5.</b> Бизнес-логика обработчика, при необходимости с запросами к базе.',
+  '<b>6.</b> Результат сериализуется в JSON или XML, добавляется статус-код (200, 201, 400, 401, 404, 500) и заголовки. <b>7.</b> Ответ уходит клиенту.',
+  'В крупных системах шаги 1, 3 и 4 частично выносят на <b>API Gateway</b>, чтобы не дублировать логику в каждом сервисе.']],
+['Какие существуют способы аутентификации и авторизации при работе с API?',
+ ['Сначала различим: <b>аутентификация</b> — проверка личности («кто ты?»), <b>авторизация</b> — проверка прав («что тебе можно?»).',
+  '<b>Basic Auth</b> — логин и пароль через двоеточие в Base64 в заголовке Authorization (задание №5). Base64 — кодирование, не шифрование, поэтому только поверх HTTPS.',
+  '<b>API Key</b> — строка-идентификатор приложения. Удобна для квот, но не говорит, какой пользователь пришёл.',
+  '<b>Bearer-токены и JWT</b> — самый частый вариант в REST. Три части: header, payload, signature. Самодостаточен: сервер проверяет подпись локально, без базы сессий.',
+  '<b>OAuth 2.0 и OpenID Connect</b> — делегированный доступ без передачи пароля. Кнопка «Войти через Google». OAuth — авторизация, OIDC добавляет аутентификацию.',
+  '<b>mTLS</b> — взаимный TLS, сертификат предъявляют обе стороны. Стандарт для связи сервис-сервис и банковских интеграций.']]
+];
+DOSSIER.exam={tag:'ЛАБОРАТОРИЯ',title:'Экзаменационные билеты — 7 вопросов',
+html:function(){
+  return '<div class="examtop"><span class="cnt">Открыто билетов: <b id="tcnt">0</b> / 7</span>'+
+    '<span style="font-family:var(--mono);font-size:10px;color:#4a5875">нажми на билет, чтобы перевернуть</span></div>'+
+    '<div class="tickets">'+QS.map(function(q,i){
+      return '<div class="ticket" data-i="'+i+'" tabindex="0" role="button" aria-label="Билет '+(i+1)+'"><div class="tin">'+
+        '<div class="tf tfront"><div class="tno">'+(i<9?'0':'')+(i+1)+'</div>'+
+        '<h4>'+q[0]+'</h4><div class="tap">ПЕРЕВЕРНУТЬ →</div></div>'+
+        '<div class="tf tback"><div class="tans">ОТВЕТ</div>'+
+        q[1].map(function(p){return '<p>'+p+'</p>';}).join('')+'</div></div></div>';
+    }).join('')+'</div>';},
+init:function(){
+  var seen={},c=document.getElementById('tcnt');
+  [].forEach.call(document.querySelectorAll('.ticket'),function(t){
+    var flip=function(){
+      t.classList.toggle('on');
+      if(t.classList.contains('on')){ seen[t.dataset.i]=1; c.textContent=Object.keys(seen).length; }
+    };
+    t.onclick=flip;
+    t.onkeydown=function(e){
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); flip(); }
+    };
+  });
+}};
+
+DOSSIER.credits={tag:'КОНЕЦ',title:'Титры',html:function(){return ''+
+'<div class="fin"><h2>Запрос вернулся домой</h2>'+
+'<p>Ты отправил сообщение «'+esc(USER_MSG)+'». Оно стало JSON-объектом, упаковалось в байты, оделось в TLS, доказало свою личность на воротах, уложилось в квоту, нашло нужный сервис, сходило в базу данных и вернулось статусом 200 OK.</p>'+
+'<p>Понимание этого пути и есть цель практической работы №3.</p>'+
+'<div class="srcs"><b>ИСТОЧНИКИ</b><ul>'+
+'<li>Практикум по выполнению практических работ по дисциплине «Формирование базы знаний на основе модели искусственного интеллекта». ДГТУ, кафедра «Информационные технологии». Сост. Е.Г. Зубарева. Практическая работа №3, с. 17–24</li>'+
+'<li><a href="https://owasp.org/API-Security/editions/2023/en/0x11-t10/" target="_blank" rel="noopener noreferrer">OWASP API Security Top 10 — 2023</a></li>'+
+'<li><a href="https://github.com/Netflix/zuul" target="_blank" rel="noopener noreferrer">Netflix Zuul</a> · <a href="https://docs.konghq.com/" target="_blank" rel="noopener noreferrer">Kong</a> · <a href="https://aws.amazon.com/api-gateway/" target="_blank" rel="noopener noreferrer">Amazon API Gateway</a> · <a href="https://cloud.google.com/apigee" target="_blank" rel="noopener noreferrer">Apigee</a> · <a href="https://www.envoyproxy.io/" target="_blank" rel="noopener noreferrer">Envoy</a></li>'+
+'<li><a href="https://learning.postman.com/docs/introduction/overview/" target="_blank" rel="noopener noreferrer">Postman Learning Center</a></li>'+
+'</ul>'+
+'<p style="margin-top:11px;font-size:11px;color:#4a5875;line-height:1.55">Станции «Личность», «Лимиты», «Маршрут» и досье по OWASP и решениям крупных компаний — <b>углубление темы сверх объёма методички</b>. Станции «Клиент», «JSON», «HTTP», «Бэкенд», терминал Postman и экзаменационные билеты воспроизводят материал практикума.</p>'+
+'</div></div>';}};
+
+/* ============================================================
+   WIRE-UP
+   ============================================================ */
+document.getElementById('send').onclick=startJourney;
+document.getElementById('msg').addEventListener('keydown',function(e){
+  /* isComposing: не перехватываем Enter, пока пользователь набирает текст
+     через IME (китайская/японская раскладка, голосовой ввод) */
+  if(e.key==='Enter'&&!e.isComposing&&!e.repeat) startJourney();
+});
+/* ФИКС: когда открывается экранная клавиатура, вьюпорт резко укорачивается и
+   поле ввода может уехать за границу — подтягиваем его обратно в зону видимости */
+(function(){
+  var m=document.getElementById('msg');
+  if(!m) return;
+  m.addEventListener('focus',function(){
+    setTimeout(function(){
+      try{ m.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){ try{ m.scrollIntoView(); }catch(_){} }
+    },320);
+  });
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize',function(){
+      if(document.activeElement===m){
+        setTimeout(function(){ try{ m.scrollIntoView({block:'center'}); }catch(e){} },120);
+      }
+    });
+  }
+})();
+document.getElementById('nextBtn').onclick=function(){go(cur+1);};
+document.getElementById('backBtn').onclick=function(){go(cur-1);};
+document.getElementById('dossBtn').onclick=function(){openModal(ST[cur].d);};
+document.getElementById('mclose').onclick=closeModal;
+document.getElementById('fsBtn').onclick=toggleFS;
+document.getElementById('fsBtn2').onclick=toggleFS;
+
+document.addEventListener('keydown',function(e){
+  if(!started) return;
+  if(modal.classList.contains('on')){ if(e.key==='Escape') closeModal(); return; }
+  if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); if(!e.repeat) go(cur+1); }
+  if(e.key==='ArrowLeft'){ e.preventDefault(); if(!e.repeat) go(cur-1); }
+  if(e.key==='Enter'&&!e.repeat&&ST[cur].d) openModal(ST[cur].d);
+  if((e.key==='f'||e.key==='F')&&!e.repeat) toggleFS();
+});
+// swipe
+(function(){
+  var x0=null,y0=null;
+  document.addEventListener('touchstart',function(e){
+    x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0===null||!started||modal.classList.contains('on')){x0=null;return;}
+    var dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
+    if(Math.abs(dx)>58&&Math.abs(dx)>Math.abs(dy)*1.6){ go(cur+(dx<0?1:-1)); }
+    x0=null;},{passive:true});
+})();
+
+buildNodes(); layout(); checkOrient();
+(function(){
+  var sk=document.getElementById('rotateSkip');
+  if(sk) sk.addEventListener('click',skipRotate);
+})();
+window.addEventListener('resize',onResize);
+window.addEventListener('orientationchange',function(){setTimeout(onResize,260);});
+/* Страховка 1: независимый канал детекции через matchMedia */
+try{
+  var mq=window.matchMedia('(orientation: landscape)');
+  var mqh=function(){ setTimeout(onResize,200); };
+  if(mq.addEventListener) mq.addEventListener('change',mqh);
+  else if(mq.addListener) mq.addListener(mqh);
+}catch(e){}
+/* Страховка 2: опрос — лёгкие мобильные браузеры (Via и др.) присылают
+   resize/orientationchange ненадёжно, из-за чего оверлей зависал навсегда.
+   Опрос сам по себе ничего не делает: он сравнивает размеры и вызывает
+   перерасчёт только когда они реально изменились. */
+(function(){
+  var pw=window.innerWidth, ph=window.innerHeight;
+  setInterval(function(){
+    var w=window.innerWidth, h=window.innerHeight;
+    if(w===pw&&h===ph) return;
+    pw=w; ph=h; onResize();
+  },600);
+})();
+/* подпись кнопки должна отражать реальное состояние полноэкранного режима */
+(function(){
+  function sync(){
+    var on=!!(document.fullscreenElement||document.webkitFullscreenElement);
+    var b=document.getElementById('fsBtn');
+    if(b){ b.textContent=on?'ОКНО':'ВЕСЬ ЭКРАН'; b.dataset.orig=b.textContent; }
+  }
+  document.addEventListener('fullscreenchange',sync);
+  document.addEventListener('webkitfullscreenchange',sync);
+})();
+setTimeout(function(){document.getElementById('msg').focus();},600);
+</script>
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && window.parent !== window) {
+    window.parent.postMessage({ type: 'close-fullscreen' }, '*');
+  }
+});
+</script>
+<!-- broken-img-handler -->
+<script>
+(function(){
+  if(window.__brokenImgHandler)return;
+  window.__brokenImgHandler=true;
+  var MAX=5,DELAYS=[2000,4000,8000,16000,32000];
+  var TOKEN=/^__(?:IMG|EMBED)_[a-zA-Z0-9_-]+__/;
+  var SENTINEL=new RegExp('^/api/published/[^/]+/(?:assets|embeds)/[^/?#]*-missing(?:[?#]|$)');
+  var NOISE=/^[\s\u2018\u2019\u201c\u201d]+|[\s\u2018\u2019\u201c\u201d]+$/g;
+  function canSrcEverResolve(src){
+    var bare=src.replace(NOISE,'');
+    return !TOKEN.test(bare)&&!SENTINEL.test(bare);
+  }
+  document.addEventListener('error',function(e){
+    var img=e.target;
+    if(!img||img.tagName!=='IMG')return;
+    var liveSrc=img.getAttribute('src');
+    var src=img.dataset.haOriginalSrc||liveSrc;
+    if(!src)return;
+    if(img.dataset.haOriginalSrc&&liveSrc&&liveSrc!==img.dataset.haOriginalSrc&&liveSrc.indexOf('_r=')<0){src=liveSrc;img.dataset.haOriginalSrc=src;img.dataset.haRetryCount='0'}
+    else if(!img.dataset.haOriginalSrc){img.dataset.haOriginalSrc=src}
+    var attempt=canSrcEverResolve(src)?parseInt(img.dataset.haRetryCount||'0',10):MAX;
+    if(img.dataset.haPhId){var old=document.getElementById(img.dataset.haPhId);if(old)old.remove()}
+    var ph=document.createElement('div');
+    ph.className='ha-img-placeholder'+(attempt>=MAX?' ha-failed':'');
+    ph.id='ha-ph-'+Math.random().toString(36).slice(2,9);
+    var w=img.getAttribute('width');var h=img.getAttribute('height');
+    if(w)ph.style.width=w+(isNaN(Number(w))?'':'px');
+    else if(img.style.width)ph.style.width=img.style.width;
+    else if(img.width>1)ph.style.width=img.width+'px';
+    if(h)ph.style.height=h+(isNaN(Number(h))?'':'px');
+    else if(img.style.height)ph.style.height=img.style.height;
+    else if(img.height>1)ph.style.height=img.height+'px';
+    ph.textContent=attempt>=MAX?'Image unavailable':'Loading image\u2026';
+    img.dataset.haPhId=ph.id;
+    if(img.dataset.haOrigDisplay==null)img.dataset.haOrigDisplay=img.style.display||'';
+    img.style.display='none';
+    img.insertAdjacentElement('afterend',ph);
+    if(attempt<MAX){
+      img.dataset.haRetryCount=String(attempt+1);
+      setTimeout(function(){
+        if(!img.isConnected)return;
+        if(img.dataset.haOriginalSrc!==src)return;
+        if(img.complete&&img.naturalWidth>0)return;
+        var curSrc=img.getAttribute('src');
+        if(curSrc&&curSrc.indexOf(src)!==0)return;
+        var fresh=src+(src.indexOf('?')>=0?'&':'?')+'_r='+(attempt+1)+'_'+Date.now();
+        img.src=fresh;
+      },DELAYS[attempt]);
+    }
+  },true);
+  document.addEventListener('load',function(e){
+    var img=e.target;
+    if(!img||img.tagName!=='IMG')return;
+    if(img.dataset.haPhId){
+      var ph=document.getElementById(img.dataset.haPhId);
+      if(ph)ph.remove();
+      delete img.dataset.haPhId;
+      img.style.display=img.dataset.haOrigDisplay||'';
+      delete img.dataset.haOrigDisplay;
+      delete img.dataset.haOriginalSrc;
+      delete img.dataset.haRetryCount;
+    }
+  },true);
+})();
+</script>
+</body>
+</html>
