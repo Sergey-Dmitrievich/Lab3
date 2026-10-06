@@ -2,1291 +2,1191 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#03050b">
-<title>PACKET — путешествие одного запроса</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#040807">
+<title>ОПЕРАЦИЯ «ТОКЕН» · ПР №5 · Российские GPT-модели</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!--
+  ОПЕРАЦИЯ «ТОКЕН» — интерактивная презентация ПР №5 «Российские GPT-модели» (ДГТУ, кафедра ИТ).
+  Сюжет: шпионский триллер. Агент получает 30-минутный токен GigaChat, удерживает его, прячет ключ и сдаёт защиту.
+  Цвет: зелень Сбера (#21a038 → #3ef08a) на зелёно-чёрном, янтарь таймера, красный тревоги.
+  Шрифты: Unbounded (заголовки, кириллица), Manrope (текст), JetBrains Mono (код и HUD).
+  Подпись: живой таймер токена в HUD, который сгорает как фитиль; бронедвери между миссиями.
+-->
 <style>
 :root{
-  --bg:#03050b; --cy:#1fe0ff; --pk:#ff2d78; --gr:#00ff9d; --am:#ffb52e;
-  --vi:#a06bff; --rd:#ff4455; --tx:#e8f0ff; --mu:#7385a3; --mu2:#4a5875;
-  --mono:'JetBrains Mono',monospace; --disp:'Chakra Petch',system-ui,sans-serif;
+  --bg:#040807; --bg2:#07110d; --card:rgba(10,24,18,.78); --line:rgba(62,240,138,.16);
+  --g:#21a038; --g2:#3ef08a; --g3:#b6ffd3; --am:#ffb020; --rd:#ff3b4e; --ice:#8fe3ff;
+  --tx:#e4efe8; --mu:#8fa89a; --mu2:#4f6559;
+  --disp:'Unbounded','Manrope',system-ui,sans-serif; --txt:'Manrope',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,monospace;
+  --hud:46px; --safe:env(safe-area-inset-left,0px); --safer:env(safe-area-inset-right,0px);
   color-scheme:dark;
-  --pad:env(safe-area-inset-left,0px);
-  --wy:47%;
 }
-@media(max-height:620px){:root{--wy:41%}}
-@media(max-height:460px){:root{--wy:38%}}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);
-  font-family:var(--disp);overscroll-behavior:none}
-body{position:fixed;inset:0;width:100%;height:100%}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx);font-family:var(--txt);overscroll-behavior:none}
+body{position:fixed;inset:0}
+button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+b{color:var(--g3);font-weight:700}
+::selection{background:var(--g);color:#000}
+.mono{font-family:var(--mono)}
 
-/* ============ ROTATE GATE ============ */
-#rotate{position:fixed;inset:0;z-index:999;background:var(--bg);display:none;
-  flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:30px;text-align:center}
+/* ---------- ambience ---------- */
+#fx{position:fixed;inset:0;z-index:0;pointer-events:none}
+.glow{position:fixed;inset:-20%;z-index:0;pointer-events:none;
+  background:radial-gradient(40% 35% at 30% 40%,rgba(33,160,56,.16),transparent 70%),
+             radial-gradient(35% 30% at 75% 70%,rgba(33,160,56,.09),transparent 70%);
+  animation:drift 26s ease-in-out infinite alternate}
+@keyframes drift{to{transform:translate(4%,-3%) scale(1.08)}}
+.grain{position:fixed;inset:-50%;z-index:90;pointer-events:none;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain .6s steps(4) infinite}
+@keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-1%)}100%{transform:translate(1%,3%)}}
+.scan{position:fixed;inset:0;z-index:89;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);opacity:.35}
+.vign{position:fixed;inset:0;z-index:88;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.65) 100%)}
+
+/* ---------- rotate gate ---------- */
+#rotate{position:fixed;inset:0;z-index:1000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:30px;text-align:center}
 #rotate.show{display:flex}
-.phone{width:64px;height:110px;border:3px solid var(--cy);border-radius:11px;position:relative;
-  animation:rot 2.4s ease-in-out infinite;box-shadow:0 0 30px rgba(31,224,255,.4)}
-.phone::after{content:'';position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
-  width:22px;height:3px;background:var(--cy);border-radius:2px}
+.phone{width:62px;height:108px;border:3px solid var(--g2);border-radius:12px;position:relative;animation:rot 2.6s ease-in-out infinite;box-shadow:0 0 34px rgba(62,240,138,.35)}
+.phone::after{content:'';position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:20px;height:3px;background:var(--g2);border-radius:2px}
+.phone::before{content:'⇄';position:absolute;inset:0;display:grid;place-items:center;color:var(--g2);font-size:24px}
 @keyframes rot{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(-90deg)}}
-#rotate h2{font-size:21px;font-weight:700;letter-spacing:.02em}
-#rotate p{font-size:13.5px;color:var(--mu);max-width:300px;line-height:1.6}
-#rotateSkip{margin-top:6px;background:transparent;border:1px solid rgba(120,150,170,.45);
-  color:var(--mu);padding:11px 22px;border-radius:8px;cursor:pointer;
-  font-family:inherit;font-size:12.5px;letter-spacing:.02em;transition:.25s}
-#rotateSkip:hover,#rotateSkip:active{border-color:var(--cy);color:var(--cy)}
+#rotate h2{font-family:var(--disp);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+#rotate p{font-size:15px;color:var(--mu);max-width:320px;line-height:1.55}
+#rotateSkip{border:1px solid var(--mu2);color:var(--mu);padding:12px 20px;border-radius:10px;font-size:14px}
+#rotateSkip:active{border-color:var(--g2);color:var(--g2)}
 
-/* ============ APP ============ */
-#app{position:fixed;inset:0;opacity:1}
-#app.hid{display:none}
+/* ---------- start ---------- */
+#start{position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;padding:4vh 6vw;
+  background:radial-gradient(60% 60% at 50% 45%,rgba(33,160,56,.14),transparent 70%),var(--bg)}
+#start.hide{animation:fadeOut .7s forwards}
+@keyframes fadeOut{to{opacity:0;visibility:hidden}}
+.st-wrap{display:grid;grid-template-columns:auto 1fr;gap:5vw;align-items:center;max-width:1100px;width:100%}
+.st-left{display:flex;flex-direction:column;gap:2.2vh}
+.eyebrow{font-family:var(--mono);font-size:13px;letter-spacing:.22em;color:var(--am);text-transform:uppercase}
+.st-title{font-family:var(--disp);font-weight:900;font-size:clamp(34px,7.4vw,104px);line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
+.st-title span{display:block;color:var(--g2);text-shadow:0 0 40px rgba(62,240,138,.45)}
+.st-sub{font-size:clamp(15px,1.5vw,19px);color:var(--mu);max-width:520px;line-height:1.5}
+.st-btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:1vh}
+.big{font-family:var(--disp);font-weight:800;font-size:clamp(14px,1.4vw,18px);letter-spacing:.04em;text-transform:uppercase;
+  background:var(--g2);color:#03140a;padding:16px 26px;border-radius:12px;box-shadow:0 0 0 0 rgba(62,240,138,.6),0 10px 40px rgba(62,240,138,.25);
+  animation:pulse 2.2s infinite;transition:transform .15s}
+.big:active{transform:scale(.97)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(62,240,138,.55),0 10px 40px rgba(62,240,138,.25)}70%{box-shadow:0 0 0 18px rgba(62,240,138,0),0 10px 40px rgba(62,240,138,.25)}100%{box-shadow:0 0 0 0 rgba(62,240,138,0),0 10px 40px rgba(62,240,138,.25)}}
+.ghost{font-size:15px;color:var(--mu);padding:16px 18px;border-radius:12px;border:1px solid var(--mu2)}
+.ghost:hover{color:var(--tx);border-color:var(--mu)}
+.st-note{font-size:14px;color:var(--mu2);display:flex;gap:10px;align-items:center}
+.st-note i{font-style:normal;display:inline-block;animation:rot 2.6s ease-in-out infinite}
+/* the keycard */
+.keycard{width:clamp(170px,22vw,290px);aspect-ratio:.63;border-radius:18px;position:relative;transform-style:preserve-3d;
+  background:linear-gradient(155deg,#0f2a1c,#06130d 60%);border:1px solid rgba(62,240,138,.35);
+  box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 60px rgba(62,240,138,.08);animation:float 6s ease-in-out infinite;overflow:hidden}
+@keyframes float{0%,100%{transform:rotateY(-14deg) rotateX(6deg) translateY(0)}50%{transform:rotateY(10deg) rotateX(-4deg) translateY(-10px)}}
+.keycard::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(182,255,211,.18) 45%,transparent 60%);animation:sheen 4.5s ease-in-out infinite}
+@keyframes sheen{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+.kc-chip{position:absolute;left:12%;top:14%;width:26%;aspect-ratio:1.3;border-radius:6px;background:linear-gradient(135deg,#ffcf6a,#b37d10);opacity:.9}
+.kc-orb{position:absolute;right:12%;top:12%;width:30%;aspect-ratio:1;border-radius:50%;background:conic-gradient(from 0deg,#21a038,#3ef08a,#8fe3ff,#21a038);filter:blur(.3px);animation:spin 6s linear infinite}
+.kc-orb::after{content:'';position:absolute;inset:18%;border-radius:50%;background:#06130d}
+@keyframes spin{to{transform:rotate(360deg)}}
+.kc-txt{position:absolute;left:12%;right:12%;bottom:10%;font-family:var(--mono);font-size:clamp(9px,.9vw,12px);color:var(--g3);line-height:1.6;word-break:break-all;opacity:.85}
+.kc-big{position:absolute;left:12%;bottom:34%;font-family:var(--disp);font-weight:900;font-size:clamp(22px,3vw,40px);color:var(--g2);letter-spacing:-.02em}
+.kc-lbl{position:absolute;left:12%;bottom:28%;font-family:var(--mono);font-size:clamp(9px,.85vw,12px);color:var(--mu);letter-spacing:.2em}
 
-/* ---- parallax layers ---- */
-.plx{position:absolute;inset:0;pointer-events:none;will-change:transform}
-#plx1{background-image:radial-gradient(1.4px 1.4px at 20% 30%,rgba(31,224,255,.5),transparent),
-  radial-gradient(1.4px 1.4px at 70% 60%,rgba(160,107,255,.45),transparent),
-  radial-gradient(1px 1px at 45% 80%,rgba(255,255,255,.3),transparent),
-  radial-gradient(1.6px 1.6px at 88% 22%,rgba(31,224,255,.35),transparent),
-  radial-gradient(1px 1px at 12% 70%,rgba(255,45,120,.3),transparent);
-  background-size:520px 420px;opacity:.85}
-#plx2{background-image:linear-gradient(rgba(70,110,180,.055) 1px,transparent 1px),
-  linear-gradient(90deg,rgba(70,110,180,.055) 1px,transparent 1px);
-  background-size:62px 62px;opacity:.6}
-.glowfloor{position:absolute;left:0;right:0;bottom:0;height:42%;pointer-events:none;
-  background:radial-gradient(ellipse 70% 100% at 50% 130%,rgba(31,224,255,.11),transparent 70%)}
+/* ---------- cinema ---------- */
+.lb{position:fixed;left:0;right:0;height:0;background:#000;z-index:400;transition:height .6s cubic-bezier(.7,0,.2,1)}
+#lbT{top:0}#lbB{bottom:0}
+body.cine .lb{height:12vh}
+#cine{position:fixed;inset:0;z-index:390;display:none;align-items:center;justify-content:center;background:rgba(2,5,4,.92);cursor:pointer;padding:0 8vw}
+#cine.on{display:flex}
+#cineTxt{font-family:var(--disp);font-weight:600;font-size:clamp(18px,2.6vw,36px);text-align:center;line-height:1.35;max-width:1000px;min-height:2.8em}
+#cineTxt .cur{display:inline-block;width:.5em;height:1em;background:var(--g2);vertical-align:-.12em;margin-left:4px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.cskip{position:fixed;right:calc(20px + var(--safer));bottom:calc(12vh + 14px);z-index:401;font-family:var(--mono);font-size:13px;color:var(--mu);letter-spacing:.12em;display:none}
+#cine.on .cskip{display:block}
+#slam{position:fixed;inset:0;z-index:395;display:none;align-items:center;justify-content:center;flex-direction:column;gap:2vh;pointer-events:none;text-align:center}
+#slam.on{display:flex}
+#slam .s1{font-family:var(--mono);color:var(--am);letter-spacing:.3em;font-size:clamp(12px,1.3vw,16px)}
+#slam .s2{font-family:var(--disp);font-weight:900;font-size:clamp(38px,9vw,140px);text-transform:uppercase;line-height:.9;letter-spacing:-.03em;color:var(--tx);animation:slamIn .55s cubic-bezier(.2,1.6,.4,1) both}
+#slam .s2 em{font-style:normal;color:var(--g2)}
+@keyframes slamIn{0%{transform:scale(2.6);opacity:0;filter:blur(12px)}100%{transform:scale(1);opacity:1;filter:none}}
 
-/* ---- speed lines ---- */
-#speed{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s}
-#speed.on{opacity:1}
-#speed i{position:absolute;height:1.5px;border-radius:2px;
-  background:linear-gradient(90deg,transparent,rgba(31,224,255,.85),transparent);
-  animation:zip .55s linear infinite;animation-play-state:paused;will-change:transform}
-#speed.on i{animation-play-state:running}
-@keyframes zip{from{transform:translateX(30vw) scaleX(.4)}to{transform:translateX(-120vw) scaleX(1.6)}}
+/* ---------- blast doors ---------- */
+.door{position:fixed;top:0;bottom:0;width:50.5%;z-index:300;background:
+  repeating-linear-gradient(135deg,rgba(255,176,32,.0) 0 22px,rgba(255,176,32,.0) 22px 44px),
+  linear-gradient(90deg,#0a1410,#0f1f18 50%,#0a1410);
+  transition:transform .55s cubic-bezier(.8,0,.2,1);display:flex;align-items:center;overflow:hidden}
+#doorL{left:0;transform:translateX(-101%);justify-content:flex-end;border-right:2px solid var(--g)}
+#doorR{right:0;transform:translateX(101%);justify-content:flex-start;border-left:2px solid var(--g)}
+body.doors #doorL,body.doors #doorR{transform:none}
+.door::before{content:'';position:absolute;left:0;right:0;height:26px;top:16%;background:repeating-linear-gradient(135deg,var(--am) 0 16px,#111 16px 32px);opacity:.75}
+.door::after{content:'';position:absolute;left:0;right:0;height:26px;bottom:16%;background:repeating-linear-gradient(135deg,var(--am) 0 16px,#111 16px 32px);opacity:.75}
+.dtext{font-family:var(--disp);font-weight:900;font-size:clamp(22px,4.6vw,70px);text-transform:uppercase;line-height:.95;padding:0 3vw;white-space:nowrap}
+#doorL .dtext{text-align:right}
+.dtext small{display:block;font-family:var(--mono);font-weight:500;font-size:clamp(11px,1.1vw,15px);letter-spacing:.3em;color:var(--am);margin-bottom:1.4vh}
+.dtext span{color:var(--g2)}
 
-/* ============ HUD ============ */
-#hud{position:absolute;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;
-  gap:12px;padding:9px calc(14px + var(--pad));pointer-events:none}
-#hud>*{pointer-events:auto}
-.brand{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--cy);
-  white-space:nowrap;text-shadow:0 0 12px rgba(31,224,255,.55)}
-.brand b{color:var(--mu2);font-weight:400}
-.track{flex:1;display:flex;align-items:center;gap:0;height:22px;min-width:0}
-.track .seg{flex:1;height:2px;background:rgba(115,133,163,.22);position:relative;transition:.45s}
-.track .seg.done{background:var(--gr);box-shadow:0 0 7px rgba(0,255,157,.6)}
-.track .seg.cur{background:var(--cy);box-shadow:0 0 9px var(--cy)}
-.hbtn{font-family:var(--mono);font-size:10px;letter-spacing:.11em;color:var(--mu);
-  border:1px solid rgba(115,133,163,.3);background:rgba(8,14,28,.6);border-radius:6px;
-  padding:6px 10px;cursor:pointer;transition:.22s;white-space:nowrap}
-.hbtn:hover,.hbtn:active{color:var(--cy);border-color:var(--cy);box-shadow:0 0 12px rgba(31,224,255,.3)}
-.stname{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mu);
-  white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:620px){.brand b{display:none}.stname{display:none}}
+/* ---------- HUD ---------- */
+#app{position:fixed;inset:0;z-index:2;display:none}
+#app.on{display:block}
+#hud{position:absolute;top:0;left:0;right:0;height:var(--hud);display:flex;align-items:center;gap:14px;padding:0 calc(14px + var(--safer)) 0 calc(14px + var(--safe));z-index:50;
+  background:linear-gradient(180deg,rgba(4,8,7,.95),rgba(4,8,7,.6));border-bottom:1px solid var(--line)}
+.brand{font-family:var(--disp);font-weight:800;font-size:13px;letter-spacing:.06em;white-space:nowrap}
+.brand span{color:var(--g2)}
+.track{flex:1;display:flex;gap:4px;min-width:60px}
+.track i{flex:1;height:4px;border-radius:2px;background:rgba(143,168,154,.18);transition:.4s;cursor:pointer;position:relative}
+.track i.done{background:var(--g)}
+.track i.cur{background:var(--g2);box-shadow:0 0 10px var(--g2)}
+#tok{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;padding:5px 10px;border-radius:8px;border:1px solid var(--mu2);color:var(--mu);white-space:nowrap;transition:.3s}
+#tok .dot{width:8px;height:8px;border-radius:50%;background:var(--mu2)}
+#tok.live{border-color:rgba(62,240,138,.5);color:var(--g3)}
+#tok.live .dot{background:var(--g2);box-shadow:0 0 8px var(--g2);animation:blink 1.4s steps(1) infinite}
+#tok.warn{border-color:var(--am);color:var(--am)}
+#tok.warn .dot{background:var(--am)}
+#tok.dead{border-color:var(--rd);color:var(--rd);animation:shakeX .5s}
+#tok.dead .dot{background:var(--rd)}
+#tok .fuse{width:46px;height:4px;border-radius:2px;background:rgba(143,168,154,.2);overflow:hidden}
+#tok .fuse b{display:block;height:100%;background:currentColor;width:0;transition:width 1s linear}
+.xp{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:13px;white-space:nowrap}
+.xp .rank{color:var(--am);letter-spacing:.08em}
+.xp .bar{width:60px;height:4px;border-radius:2px;background:rgba(143,168,154,.2);overflow:hidden}
+.xp .bar b{display:block;height:100%;background:var(--am);width:0;transition:width .6s}
+.xp .combo{color:var(--g2);min-width:24px}
+.hb{font-family:var(--mono);font-size:13px;color:var(--mu);padding:6px 9px;border:1px solid var(--mu2);border-radius:8px;white-space:nowrap}
+.hb:hover{color:var(--g2);border-color:var(--g2)}
+@media(max-width:900px){.brand .bl{display:none}.xp .bar{display:none}}
+@media(max-width:700px){.xp .rank{display:none}#tok .fuse{display:none}}
 
-/* ============ WORLD ============ */
-#viewport{position:absolute;inset:0;overflow:hidden}
-#world{position:absolute;top:0;left:0;height:100%;will-change:transform}
-#wireSvg{position:absolute;top:var(--wy);left:0;transform:translateY(-50%);height:220px;overflow:visible}
-.wline{fill:none;stroke:rgba(31,224,255,.16);stroke-width:2}
-.wglow{fill:none;stroke:var(--cy);stroke-width:2;filter:drop-shadow(0 0 6px var(--cy));
-  stroke-dasharray:14 22;animation:flow 1.1s linear infinite}
-/* сегмент, который ещё не пройден, не должен крутить анимацию вхолостую */
-.wseg{animation-play-state:paused}
-.wseg.vis{animation-play-state:running}
-@keyframes flow{to{stroke-dashoffset:-36}}
-.wdone{stroke:var(--gr);filter:drop-shadow(0 0 7px var(--gr))}
-.wlab{stroke:rgba(160,107,255,.2)}
-.wlab-g{stroke:var(--vi);filter:drop-shadow(0 0 6px var(--vi))}
-
-/* station nodes */
-/* transition только по transform/opacity: иначе при ресайзе 14 узлов
-   полсекунды анимируют свойство left и дают лишние layout-проходы */
-.node{position:absolute;top:var(--wy);transform:translate(-50%,-50%);width:78px;height:78px;
-  display:flex;align-items:center;justify-content:center;transition:transform .5s,opacity .5s}
-.nring{position:absolute;inset:0;border:1.5px solid rgba(115,133,163,.3);
-  border-radius:14px;transform:rotate(45deg);transition:.5s;background:rgba(5,9,18,.75)}
-.node.on .nring{border-color:var(--cy);width:112%;height:112%;margin:-6%;
-  box-shadow:0 0 30px rgba(31,224,255,.55),inset 0 0 18px rgba(31,224,255,.11)}
-.node.done .nring{border-color:rgba(0,255,157,.55);background:rgba(0,255,157,.045)}
-.node.lab .nring{border-radius:50%}
-.node.lab.on .nring{border-color:var(--vi);box-shadow:0 0 26px rgba(160,107,255,.5)}
-.nico{position:relative;font-size:27px;line-height:1;filter:grayscale(1) opacity(.45);transition:.5s}
-.node.on .nico{filter:none;opacity:0;transform:scale(1.7)}
-.node.done .nico{filter:grayscale(.3) opacity(.8)}
-.nlbl{position:absolute;top:-25px;left:50%;transform:translateX(-50%);white-space:nowrap;
-  font-family:var(--mono);font-size:8.5px;letter-spacing:.11em;color:var(--mu2);transition:.4s}
-.node.on .nlbl{color:var(--cy)}
-.node.done .nlbl{color:rgba(0,255,157,.6)}
-
-/* ============ PACKET CUBE ============ */
-#pkt{position:absolute;top:var(--wy);left:0;width:62px;height:62px;margin:-31px 0 0 -31px;
-  perspective:700px;pointer-events:none;z-index:20;opacity:0;will-change:transform}
-#pkt.on{opacity:1}
-.cube{width:62px;height:62px;position:relative;transform-style:preserve-3d;
-  animation:spin 9s linear infinite;animation-play-state:paused}
-#pkt.on .cube{animation-play-state:running}
-@keyframes spin{from{transform:rotateX(-16deg) rotateY(0)}to{transform:rotateX(-16deg) rotateY(360deg)}}
-.cf{position:absolute;width:62px;height:62px;border:1.5px solid var(--cy);
-  background:rgba(31,224,255,.09);display:flex;align-items:center;justify-content:center;
-  font-family:var(--mono);font-size:7.5px;color:var(--cy);letter-spacing:.04em;
-  box-shadow:inset 0 0 22px rgba(31,224,255,.2);text-align:center;line-height:1.35;padding:3px}
-.cf:nth-child(1){transform:translateZ(31px)}
-.cf:nth-child(2){transform:rotateY(180deg) translateZ(31px)}
-.cf:nth-child(3){transform:rotateY(90deg) translateZ(31px)}
-.cf:nth-child(4){transform:rotateY(-90deg) translateZ(31px)}
-.cf:nth-child(5){transform:rotateX(90deg) translateZ(31px)}
-.cf:nth-child(6){transform:rotateX(-90deg) translateZ(31px)}
-#pkt .halo{position:absolute;inset:-30px;border-radius:50%;pointer-events:none;
-  background:radial-gradient(circle,rgba(31,224,255,.3),transparent 66%);
-  animation:pulse 2.4s ease-in-out infinite;animation-play-state:paused}
-#pkt.on .halo{animation-play-state:running}
-@keyframes pulse{0%,100%{opacity:.5;transform:scale(.9)}50%{opacity:1;transform:scale(1.15)}}
-/* packet state skins */
-#pkt.enc .cf{border-color:var(--gr);color:var(--gr);background:rgba(0,255,157,.09);
-  box-shadow:inset 0 0 22px rgba(0,255,157,.2)}
-#pkt.enc .halo{background:radial-gradient(circle,rgba(0,255,157,.3),transparent 66%)}
-#pkt.warn .cf{border-color:var(--am);color:var(--am);background:rgba(255,181,46,.09)}
-#pkt.warn .halo{background:radial-gradient(circle,rgba(255,181,46,.3),transparent 66%)}
-#pkt.resp .cf{border-color:var(--vi);color:var(--vi);background:rgba(160,107,255,.1)}
-#pkt.resp .halo{background:radial-gradient(circle,rgba(160,107,255,.3),transparent 66%)}
-
-/* ============ PANEL ============ */
-#panel{position:absolute;left:0;right:0;bottom:0;z-index:35;
-  padding:0 calc(16px + var(--pad)) calc(13px + env(safe-area-inset-bottom,0px));
-  transform:translateY(112%);transition:transform .6s cubic-bezier(.22,.9,.3,1);pointer-events:none}
-#panel.on{transform:none;pointer-events:auto}
-.pinner{max-width:940px;margin:0 auto;background:linear-gradient(175deg,rgba(9,15,29,.94),rgba(5,9,18,.97));
-  border:1px solid rgba(31,224,255,.22);border-radius:14px;padding:15px 18px;
-  backdrop-filter:blur(16px);box-shadow:0 -12px 46px -18px rgba(31,224,255,.3);
-  display:flex;gap:16px;align-items:flex-start}
-.pinner.lab{border-color:rgba(160,107,255,.28);box-shadow:0 -12px 46px -18px rgba(160,107,255,.32)}
-.pmain{flex:1;min-width:0}
-.ptag{font-family:var(--mono);font-size:9px;letter-spacing:.2em;color:var(--cy);margin-bottom:5px}
-.pinner.lab .ptag{color:var(--vi)}
-#ptitle{font-size:clamp(17px,2.9vw,25px);font-weight:700;line-height:1.14;letter-spacing:-.01em;margin-bottom:6px}
-.pbodywrap{position:relative}
-.pbodywrap::after{content:'';position:absolute;left:0;right:0;bottom:0;height:22px;pointer-events:none;
-  background:linear-gradient(transparent,rgba(7,12,24,.97));opacity:0;transition:.3s}
-.pbodywrap.scrollable::after{opacity:1}
-#pbody{font-size:clamp(11.8px,1.55vw,13.8px);line-height:1.56;color:#a8b6ce;max-height:19vh;overflow-y:auto;
-  scrollbar-width:thin}
-#pbody b{color:var(--tx);font-weight:600}
-#pbody .hi{color:var(--cy)}
-#ptech{font-family:var(--mono);font-size:9.5px;color:var(--cy);margin-top:7px;
-  background:rgba(31,224,255,.07);border:1px solid rgba(31,224,255,.18);
-  padding:5px 10px;border-radius:6px;display:inline-block;letter-spacing:.03em}
-.pside{display:flex;flex-direction:column;gap:7px;flex-shrink:0}
-.pbtn{font-family:var(--disp);font-weight:600;font-size:12.5px;letter-spacing:.03em;
-  padding:10px 17px;border-radius:8px;border:none;cursor:pointer;white-space:nowrap;transition:.2s}
-.pnext{background:linear-gradient(100deg,var(--cy),var(--vi));color:#03060e}
-.pnext:hover{filter:brightness(1.15)}
-.pdoss{background:rgba(160,107,255,.1);border:1px solid rgba(160,107,255,.35);color:var(--vi)}
-.pdoss:hover{background:rgba(160,107,255,.2)}
-.pback{background:transparent;border:1px solid rgba(115,133,163,.3);color:var(--mu);font-size:11px;padding:7px 15px}
-.pback:hover{color:var(--tx);border-color:var(--mu)}
-@media(max-width:640px),(max-height:430px){
-  .pinner{padding:11px 13px;gap:11px}
-  #pbody{max-height:20vh;font-size:11.5px;line-height:1.5}
-  #ptitle{font-size:16px;margin-bottom:4px}
-  .pbtn{font-size:11px;padding:8px 13px}
-  #ptech{font-size:8.5px;padding:4px 8px}
+/* ---------- scene ---------- */
+#scene{position:absolute;top:var(--hud);left:0;right:0;bottom:0;display:grid;grid-template-columns:minmax(250px,33%) 1fr;gap:clamp(14px,2.4vw,36px);
+  padding:clamp(10px,2.4vh,28px) calc(clamp(14px,3vw,44px) + var(--safer)) clamp(10px,2.4vh,28px) calc(clamp(14px,3vw,44px) + var(--safe))}
+.brief{display:flex;flex-direction:column;gap:clamp(8px,1.6vh,16px);min-height:0;overflow:auto;padding-right:4px}
+.tag{font-family:var(--mono);font-size:13px;letter-spacing:.18em;color:var(--am);text-transform:uppercase}
+.tag em{font-style:normal;color:var(--mu)}
+.title{font-family:var(--disp);font-weight:900;font-size:clamp(24px,3.6vw,54px);line-height:.98;text-transform:uppercase;letter-spacing:-.02em}
+.title span{color:var(--g2)}
+.lead{font-size:clamp(15px,1.35vw,18px);line-height:1.55;color:var(--mu)}
+.lead b{color:var(--tx)}
+.ctl{margin-top:auto;display:flex;gap:10px;flex-wrap:wrap;padding-top:6px}
+.btn{font-family:var(--disp);font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;padding:13px 18px;border-radius:11px;border:1px solid var(--mu2);color:var(--tx);transition:.2s;white-space:nowrap}
+.btn:hover{border-color:var(--g2);color:var(--g2)}
+.btn.go{background:var(--g2);color:#03140a;border-color:var(--g2)}
+.btn.go.ready{animation:pulse 1.8s infinite}
+.btn.go:hover{filter:brightness(1.1);color:#03140a}
+.btn.small{font-size:13px;padding:10px 14px}
+.btn.amber{border-color:var(--am);color:var(--am)}
+.btn.red{border-color:var(--rd);color:var(--rd)}
+.btn:disabled{opacity:.35;pointer-events:none}
+.stage{position:relative;min-height:0;border-radius:18px;border:1px solid var(--line);background:var(--card);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  overflow:auto;padding:clamp(12px,2.2vh,24px) clamp(12px,1.8vw,26px);box-shadow:inset 0 0 80px rgba(33,160,56,.05)}
+.stage::-webkit-scrollbar,.brief::-webkit-scrollbar{width:6px}
+.stage::-webkit-scrollbar-thumb,.brief::-webkit-scrollbar-thumb{background:var(--mu2);border-radius:3px}
+.enter > *{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.enter > *:nth-child(2){animation-delay:.07s}.enter > *:nth-child(3){animation-delay:.14s}.enter > *:nth-child(4){animation-delay:.21s}.enter > *:nth-child(5){animation-delay:.28s}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@media(max-height:500px){
+  :root{--hud:40px}
+  .title{font-size:clamp(20px,3.2vw,34px)}
+  .lead{font-size:14px;line-height:1.45}
+  .btn{padding:10px 13px;font-size:13px}
+  .tag{font-size:12px}
+}
+@media(orientation:portrait){
+  #scene{grid-template-columns:1fr;grid-template-rows:auto auto;overflow:auto;align-content:start}
+  .stage{overflow:visible}
+  .st-wrap{grid-template-columns:1fr}.keycard{display:none}
 }
 
-/* ============ INTRO TERMINAL ============ */
-#intro{position:absolute;inset:0;z-index:60;background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:22px calc(20px + var(--pad));transition:opacity .8s,transform .8s}
-#intro.gone{opacity:0;transform:scale(1.14);pointer-events:none}
-.ieyebrow{font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;color:var(--mu2);margin-bottom:13px;text-align:center}
-.ititle{font-size:clamp(25px,6.4vw,58px);font-weight:700;letter-spacing:-.035em;line-height:.98;
-  text-align:center;margin-bottom:9px;
-  background:linear-gradient(100deg,#fff 15%,var(--cy) 55%,var(--vi));
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.isub{font-size:clamp(11.5px,1.75vw,14.5px);color:var(--mu);text-align:center;
-  max-width:480px;margin-bottom:clamp(16px,3.4vh,30px);line-height:1.55}
-.term{width:100%;max-width:560px;background:rgba(7,12,24,.9);border:1px solid rgba(31,224,255,.28);
-  border-radius:11px;overflow:hidden;box-shadow:0 0 46px -14px rgba(31,224,255,.45)}
-.tbar{display:flex;align-items:center;gap:6px;padding:8px 12px;border-bottom:1px solid rgba(31,224,255,.14);
-  background:rgba(31,224,255,.035)}
-.tbar i{width:8px;height:8px;border-radius:50%;background:#2a3348}
-.tbar i:nth-child(1){background:#ff5f57}.tbar i:nth-child(2){background:#febc2e}.tbar i:nth-child(3){background:#28c840}
-.tbar span{font-family:var(--mono);font-size:9.5px;color:var(--mu2);margin-left:5px;letter-spacing:.07em}
-.tbody{padding:14px}
-.tprompt{font-family:var(--mono);font-size:10.5px;color:var(--gr);margin-bottom:9px}
-.trow{display:flex;gap:9px;align-items:stretch}
-#msg{flex:1;min-width:0;font-family:var(--mono);font-size:clamp(12px,1.7vw,14px);
-  background:#04070f;border:1px solid rgba(31,224,255,.22);border-radius:7px;
-  padding:11px 13px;color:var(--cy);outline:none;transition:.2s}
-#msg:focus{border-color:var(--cy);box-shadow:0 0 0 3px rgba(31,224,255,.1)}
-#msg::placeholder{color:var(--mu2)}
-#send{font-family:var(--disp);font-weight:700;font-size:clamp(12px,1.6vw,14px);letter-spacing:.04em;
-  padding:11px clamp(16px,3vw,28px);border-radius:7px;border:none;cursor:pointer;
-  background:linear-gradient(100deg,var(--cy),var(--vi));color:#03060e;transition:.2s;white-space:nowrap}
-#send:hover{filter:brightness(1.17);transform:translateY(-1px)}
-#send:active{transform:translateY(0)}
-.thint{font-family:var(--mono);font-size:9.5px;color:var(--mu2);margin-top:10px;letter-spacing:.05em}
-.istart{margin-top:clamp(14px,3vh,26px);display:flex;gap:9px;flex-wrap:wrap;justify-content:center}
+/* ---------- shared widgets ---------- */
+.code{font-family:var(--mono);font-size:14px;line-height:1.65;background:rgba(0,0,0,.4);border:1px solid rgba(143,168,154,.15);border-radius:12px;padding:12px 14px;overflow:auto;white-space:pre;color:#cfe3d7}
+.code .k{color:#ff8fb3}.code .s{color:var(--am)}.code .c{color:#5f7a6b;font-style:italic}.code .n{color:var(--ice)}.code .f{color:var(--g2)}
+.kv{font-family:var(--mono);font-size:14px;line-height:1.9}
+.kv .h{color:var(--mu)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--mu2);color:var(--mu)}
+.pill.ok{border-color:var(--g2);color:var(--g2)}.pill.bad{border-color:var(--rd);color:var(--rd)}.pill.am{border-color:var(--am);color:var(--am)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:12px}
+.lbl{font-family:var(--mono);font-size:13px;color:var(--mu);letter-spacing:.12em;text-transform:uppercase}
+.inp{font-family:var(--mono);font-size:14px;background:rgba(0,0,0,.45);border:1px solid var(--mu2);color:var(--tx);border-radius:10px;padding:11px 12px;width:100%;outline:none}
+.inp:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(62,240,138,.15)}
+.shake{animation:shakeX .45s}
+@keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+.flashok{animation:flashok .7s}
+@keyframes flashok{0%{box-shadow:0 0 0 0 rgba(62,240,138,.8)}100%{box-shadow:0 0 0 22px rgba(62,240,138,0)}}
+.glitch{animation:glitch .5s steps(2) 3}
+@keyframes glitch{0%{transform:translate(0);filter:none}25%{transform:translate(-6px,2px);filter:hue-rotate(90deg) saturate(3)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,1px);filter:hue-rotate(-60deg)}100%{transform:none;filter:none}}
+body.alarm::after{content:'';position:fixed;inset:0;z-index:80;pointer-events:none;box-shadow:inset 0 0 120px rgba(255,59,78,.55);animation:alarm 1s ease-in-out infinite}
+@keyframes alarm{50%{opacity:.25}}
 
-/* ---- transformation stage ---- */
-#xform{position:absolute;inset:0;z-index:61;display:none;align-items:center;justify-content:center;
-  background:var(--bg);padding:20px}
-#xform.on{display:flex}
-.xjson{font-family:var(--mono);font-size:clamp(11px,1.9vw,16px);line-height:1.85;color:var(--mu);
-  text-align:left;transition:transform .85s cubic-bezier(.6,0,.4,1),opacity .85s,filter .85s}
-.xjson .k{color:var(--cy)}.xjson .s{color:var(--gr)}.xjson .n{color:var(--am)}.xjson .p{color:var(--mu2)}
-.xjson div{opacity:0;transform:translateX(-14px);animation:jin .38s forwards}
-@keyframes jin{to{opacity:1;transform:none}}
-.xjson.crush{transform:scale(.06) rotate(22deg);opacity:0;filter:blur(7px)}
-#xflash{position:absolute;width:15px;height:15px;border-radius:50%;background:#fff;opacity:0;
-  box-shadow:0 0 60px 26px rgba(31,224,255,.85)}
-#xflash.go{animation:fl .75s ease-out forwards}
-@keyframes fl{0%{opacity:0;transform:scale(.3)}22%{opacity:1;transform:scale(1.5)}100%{opacity:0;transform:scale(5)}}
-.xcaption{position:absolute;bottom:13%;left:0;right:0;text-align:center;
-  font-family:var(--mono);font-size:clamp(9.5px,1.5vw,12px);letter-spacing:.17em;
-  color:var(--cy);opacity:0;transition:opacity .5s}
-.xcaption.on{opacity:1}
+/* ---------- toasts ---------- */
+#toasts{position:fixed;right:calc(14px + var(--safer));top:calc(var(--hud) + 10px);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none}
+.toast{font-family:var(--mono);font-size:14px;padding:9px 14px;border-radius:10px;background:rgba(5,14,10,.94);border:1px solid var(--g2);color:var(--g3);box-shadow:0 10px 30px rgba(0,0,0,.5);animation:tin .35s cubic-bezier(.2,1.4,.4,1) both;max-width:min(420px,70vw)}
+.toast.bad{border-color:var(--rd);color:#ffc2c8}.toast.am{border-color:var(--am);color:#ffe2a8}
+.toast.out{animation:tout .35s forwards}
+@keyframes tin{from{opacity:0;transform:translateX(40px) scale(.9)}}
+@keyframes tout{to{opacity:0;transform:translateX(30px)}}
+.xpfly{position:fixed;z-index:210;font-family:var(--disp);font-weight:900;font-size:22px;color:var(--am);pointer-events:none;text-shadow:0 0 18px rgba(255,176,32,.6);animation:xpfly 1.1s ease-out forwards}
+@keyframes xpfly{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1;transform:translateY(-10px) scale(1.15)}100%{opacity:0;transform:translateY(-70px) scale(1)}}
 
-/* ============ MODAL ============ */
-#modal{position:absolute;inset:0;z-index:80;background:rgba(2,4,10,.93);backdrop-filter:blur(9px);
-  display:none;flex-direction:column;padding:calc(11px + env(safe-area-inset-top,0px)) calc(14px + var(--pad)) calc(11px + env(safe-area-inset-bottom,0px))}
-#modal.on{display:flex}
-.mhead{display:flex;align-items:center;gap:12px;margin-bottom:11px;flex-shrink:0}
-.mtag{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--vi)}
-.mtitle{font-size:clamp(15px,2.4vw,22px);font-weight:700;flex:1;min-width:0;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mclose{font-family:var(--mono);font-size:11px;padding:7px 14px;border-radius:7px;cursor:pointer;
-  background:rgba(255,68,85,.1);border:1px solid rgba(255,68,85,.35);color:var(--rd);transition:.2s}
-.mclose:hover{background:rgba(255,68,85,.22)}
-.mbody{flex:1;overflow-y:auto;padding-right:5px}
-.mbody::-webkit-scrollbar{width:7px}
-.mbody::-webkit-scrollbar-thumb{background:#1b2540;border-radius:4px}
-
-/* dossier content */
-.dgrid{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr))}
-.dcard{background:rgba(9,15,29,.8);border:1px solid rgba(115,133,163,.2);border-radius:11px;padding:14px 16px}
-.dcard h4{font-size:14.5px;font-weight:600;margin-bottom:6px;color:var(--c,var(--cy))}
-.dcard p{font-size:12.3px;line-height:1.55;color:#a3b1c9;margin-bottom:7px}
-.dcard p:last-child{margin-bottom:0}
-.dcard b{color:var(--tx)}
-.dcard ul{list-style:none;display:grid;gap:5px;margin-top:6px}
-.dcard li{font-size:12px;color:#a3b1c9;padding-left:13px;position:relative;line-height:1.5}
-.dcard li::before{content:'▸';position:absolute;left:0;color:var(--c,var(--cy));font-size:9.5px;top:2px}
-.dfoot{margin-top:9px;padding-top:8px;border-top:1px solid rgba(115,133,163,.17);
-  font-size:11.5px;color:var(--mu)}
-.dfoot b{color:var(--c,var(--cy))}
-.drow{display:flex;gap:11px;padding:9px 13px;border-radius:8px;background:rgba(9,15,29,.7);
-  border:1px solid rgba(115,133,163,.17);margin-bottom:6px;align-items:flex-start}
-.drow .did{font-family:var(--mono);font-size:9.5px;color:var(--rd);min-width:46px;font-weight:700;padding-top:2px}
-.drow b{display:block;font-size:12.8px;margin-bottom:2px;color:var(--tx);font-weight:600}
-.drow span{font-size:11.7px;color:var(--mu);line-height:1.45}
-.drow.au{border-left:2px solid var(--am)}
-pre.code{font-family:var(--mono);font-size:11.5px;line-height:1.7;color:#a3b1c9;background:#04070f;
-  border:1px solid rgba(115,133,163,.2);border-radius:8px;padding:12px;overflow-x:auto;margin-top:7px}
-.jwtline{font-family:var(--mono);font-size:clamp(9.5px,1.5vw,13px);word-break:break-all;
-  text-align:center;background:#04070f;border:1px solid rgba(115,133,163,.2);
-  border-radius:8px;padding:13px;line-height:1.9;margin-bottom:10px}
-.jwtline .a{color:var(--pk)}.jwtline .b{color:var(--vi)}.jwtline .c{color:var(--cy)}.jwtline .d{color:var(--mu2)}
-
-/* ============ POSTMAN TERMINAL ============ */
-.pmtasks{display:flex;gap:5px;overflow-x:auto;padding-bottom:9px;margin-bottom:10px;
-  border-bottom:1px solid rgba(115,133,163,.17)}
-.pmtasks button{font-family:var(--mono);font-size:10px;white-space:nowrap;padding:6px 10px;
-  border-radius:6px;border:1px solid rgba(115,133,163,.24);background:rgba(255,255,255,.02);
-  color:var(--mu);cursor:pointer;transition:.2s}
-.pmtasks button.on{background:rgba(31,224,255,.12);border-color:var(--cy);color:var(--cy)}
-.pmwrap{display:grid;gap:11px;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))}
-.pmcol{background:rgba(9,15,29,.8);border:1px solid rgba(115,133,163,.2);border-radius:11px;overflow:hidden}
-.pmurl{display:flex;gap:7px;padding:11px;align-items:center;flex-wrap:wrap;border-bottom:1px solid rgba(115,133,163,.15)}
-.pmm{font-family:var(--mono);font-weight:700;font-size:11px;padding:7px 11px;border-radius:6px;
-  border:1px solid;min-width:68px;text-align:center;letter-spacing:.04em}
-.pmu{flex:1;min-width:150px;font-family:var(--mono);font-size:11px;padding:7px 10px;border-radius:6px;
-  background:#04070f;border:1px solid rgba(115,133,163,.2);color:var(--cy);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.pmsend{font-family:var(--disp);font-weight:700;font-size:11.5px;padding:7px 18px;border-radius:6px;
-  border:none;background:linear-gradient(100deg,var(--cy),var(--vi));color:#03060e;cursor:pointer}
-.pmsend:disabled{opacity:.5}
-.pmsec{padding:11px;font-family:var(--mono);font-size:11px}
-.pmsec .lbl{font-size:9px;letter-spacing:.14em;color:var(--mu2);margin-bottom:6px}
-.kv{display:flex;gap:9px;padding:2px 0}
-.kv b{color:var(--am);font-weight:500;min-width:98px;font-size:10.5px}
-.kv span{color:#a3b1c9;font-size:10.5px}
-.pmsec pre{color:var(--gr);white-space:pre-wrap;line-height:1.6;font-size:10.5px}
-.pmstat{display:flex;gap:13px;font-family:var(--mono);font-size:10px;margin-bottom:8px;flex-wrap:wrap}
-.pmstat b{color:var(--gr)}.pmstat i{color:var(--mu2);font-style:normal}
-.pmout{font-family:var(--mono);font-size:10.5px;line-height:1.7;color:#a3b1c9;white-space:pre-wrap;
-  word-break:break-word;max-height:30vh;overflow-y:auto}
-.pmout .jk{color:var(--cy)}.pmout .jv{color:var(--gr)}
-.pmout .jn{color:var(--am)}.pmout .jb{color:var(--pk)}
-.pmhint{margin-top:10px;padding:11px 13px;border-radius:9px;background:rgba(160,107,255,.06);
-  border:1px solid rgba(160,107,255,.2);font-size:12.2px;color:#a3b1c9;line-height:1.55}
-.pmhint b{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--vi);margin-bottom:5px}
-
-/* ============ EXAM TICKETS ============ */
-.tickets{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
-.ticket{perspective:1200px;min-height:170px;cursor:pointer}
-.tin{position:relative;width:100%;height:100%;min-height:170px;transition:transform .7s cubic-bezier(.4,.2,.2,1);
-  transform-style:preserve-3d}
-.ticket.on .tin{transform:rotateY(180deg)}
-.tf{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  border-radius:11px;border:1px solid rgba(115,133,163,.24);background:rgba(9,15,29,.85);
-  padding:15px;display:flex;flex-direction:column}
-.tfront{justify-content:space-between}
-.tfront .tno{font-family:var(--mono);font-size:26px;font-weight:700;color:rgba(31,224,255,.22);line-height:1}
-.tfront h4{font-size:13.5px;font-weight:600;line-height:1.38;margin:9px 0}
-.tfront .tap{font-family:var(--mono);font-size:8.5px;letter-spacing:.14em;color:var(--mu2)}
-.tback{transform:rotateY(180deg);background:linear-gradient(160deg,rgba(31,224,255,.09),rgba(6,11,22,.97));
-  border-color:rgba(31,224,255,.3);overflow-y:auto}
-.tback .tans{font-family:var(--mono);font-size:8.5px;letter-spacing:.15em;color:var(--cy);margin-bottom:8px;flex-shrink:0}
-.tback p{font-size:11.8px;color:#b6c3da;line-height:1.55;margin-bottom:7px}
-.tback p:last-child{margin-bottom:0}
-.tback b{color:var(--tx)}
-.tback code{font-family:var(--mono);font-size:10.5px;background:rgba(31,224,255,.1);color:var(--cy);
-  padding:1px 4px;border-radius:3px}
-.examtop{display:flex;align-items:center;gap:13px;margin-bottom:11px;flex-wrap:wrap}
-.examtop .cnt{font-family:var(--mono);font-size:10.5px;color:var(--mu)}
-.examtop .cnt b{color:var(--gr)}
-
-/* ============ FINALE ============ */
-.fin{text-align:center;padding:14px}
-.fin h2{font-size:clamp(20px,3.6vw,34px);font-weight:700;margin-bottom:10px;
-  background:linear-gradient(100deg,#fff,var(--cy) 55%,var(--vi));
-  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.fin p{font-size:12.8px;color:#a3b1c9;max-width:540px;margin:0 auto 9px;line-height:1.6}
-.srcs{max-width:620px;margin:16px auto 0;text-align:left;padding:14px;border-radius:10px;
-  background:rgba(9,15,29,.8);border:1px solid rgba(115,133,163,.2);font-size:11.5px;color:var(--mu)}
-.srcs b{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--cy);margin-bottom:7px}
-.srcs li{list-style:none;padding-left:12px;position:relative;margin-bottom:4px;line-height:1.5}
-.srcs li::before{content:'·';position:absolute;left:3px;color:var(--cy)}
-.srcs a{color:var(--vi);text-decoration:none;border-bottom:1px solid rgba(160,107,255,.3)}
-
-::-webkit-scrollbar{width:7px;height:7px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#1b2540;border-radius:4px}
-/* ===== ФИКС: низкий экран (телефон горизонтально / открыта клавиатура) =====
-   Интро выше вьюпорта -> контент обрезался, поле ввода уезжало за край и его
-   нельзя было нажать. Делаем интро прокручиваемым и компактным. */
-@media(max-height:470px){
-  #intro{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    padding-top:12px;padding-bottom:12px}
-  #intro>*{flex-shrink:0}
-  .ieyebrow{margin-bottom:6px;font-size:9px}
-  .ititle{font-size:clamp(19px,4.6vw,30px);margin-bottom:5px}
-  .isub{font-size:11.5px;margin-bottom:10px;line-height:1.4}
-  .istart{margin-top:8px}
-}
-@media(max-height:330px){
-  .ieyebrow,.isub,.thint{display:none}
-  .ititle{font-size:18px;margin-bottom:6px}
-}
-/* доступность: видимый фокус с клавиатуры, в стилистике интерфейса */
-button:focus-visible,input:focus-visible,.ticket:focus-visible{
-  outline:2px solid var(--cy);outline-offset:2px}
-.ticket{outline-offset:4px}
-
-@media(prefers-reduced-motion:reduce){
-  *{animation-duration:.01ms!important;animation-iteration-count:1!important;
-    transition-duration:.12s!important}
-  #speed{display:none}
-}
-</style>
-<style>
-.ha-img-placeholder{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;background:#f4f4f5;border:1px dashed #d4d4d8;border-radius:8px;color:#71717a;font-size:12px;font-family:system-ui,sans-serif;min-height:80px;padding:16px;box-sizing:border-box;animation:ha-img-pulse 1.5s ease-in-out infinite}
-.ha-img-placeholder.ha-failed{animation:none;opacity:.7}
-@keyframes ha-img-pulse{0%,100%{opacity:1}50%{opacity:.5}}
-@media(prefers-color-scheme:dark){.ha-img-placeholder{background:#27272a;border-color:#3f3f46;color:#a1a1aa}}
+/* ---------- modal ---------- */
+#modal{position:fixed;inset:0;z-index:250;background:rgba(1,4,3,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:3vh 3vw}
+#modal.on{display:flex;animation:fadeIn .25s}
+@keyframes fadeIn{from{opacity:0}}
+.mbox{width:min(1100px,100%);max-height:100%;display:flex;flex-direction:column;border-radius:18px;border:1px solid rgba(62,240,138,.35);background:linear-gradient(180deg,#0a1812,#050c09);overflow:hidden;animation:rise .4s cubic-bezier(.2,.8,.2,1)}
+.mhead{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.mhead .stamp{font-family:var(--disp);font-weight:900;font-size:13px;color:var(--rd);border:2px solid var(--rd);padding:3px 8px;border-radius:6px;transform:rotate(-4deg);letter-spacing:.08em}
+.mhead h3{font-family:var(--disp);font-weight:800;font-size:clamp(15px,1.6vw,20px);text-transform:uppercase;flex:1}
+.mbody{padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.mbody p{font-size:15px;line-height:1.55;color:var(--mu)}
+.mbody .code{font-size:14px}
+.cpy{font-family:var(--mono);font-size:13px;color:var(--g2);border:1px solid var(--g);border-radius:8px;padding:6px 10px}
 </style>
 </head>
+<style>
+/* ===== M0 fighter select ===== */
+.fs{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(10px,2vw,26px);align-items:stretch;height:100%}
+.ft{justify-content:center;position:relative;border-radius:16px;border:1px solid var(--mu2);padding:clamp(12px,2vh,22px) clamp(12px,1.4vw,20px);display:flex;flex-direction:column;gap:10px;text-align:left;transition:.3s;overflow:hidden;background:rgba(0,0,0,.25)}
+.ft:hover{transform:translateY(-4px)}
+.ft.gc:hover,.ft.gc.sel{border-color:var(--g2);box-shadow:0 0 0 1px var(--g2),0 20px 60px rgba(62,240,138,.2)}
+.ft.ya:hover{border-color:#ffcc00}
+.ft.ya.sel{border-color:#ffcc00;box-shadow:0 0 0 1px #ffcc00}
+.ft .av{width:clamp(54px,7vw,96px);aspect-ratio:1;border-radius:50%;position:relative}
+.ft.gc .av{background:conic-gradient(from 30deg,#21a038,#3ef08a,#8fe3ff,#21a038);animation:spin 8s linear infinite}
+.ft.gc .av::after{content:'';position:absolute;inset:22%;border-radius:50%;background:#06130d;box-shadow:inset 0 0 20px rgba(62,240,138,.6)}
+.ft.ya .av{background:radial-gradient(circle at 35% 35%,#ffdb4d,#fc3f1d 70%)}
+.ft.ya .av::after{content:'Я';position:absolute;inset:0;display:grid;place-items:center;font-family:var(--disp);font-weight:900;color:#fff;font-size:clamp(22px,3vw,40px)}
+.ft h4{font-family:var(--disp);font-weight:900;font-size:clamp(18px,2.2vw,30px);text-transform:uppercase;letter-spacing:-.01em}
+.ft .who{font-family:var(--mono);font-size:13px;color:var(--mu);letter-spacing:.14em}
+.ft ul{list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--mu);line-height:1.4}
+.ft ul li::before{content:'▸ ';color:var(--g2)}
+.ft.ya ul li::before{color:#ffcc00}
+.ft .p1{position:absolute;top:12px;right:12px;font-family:var(--disp);font-weight:900;font-size:13px;color:#03140a;background:var(--g2);padding:4px 8px;border-radius:6px;opacity:0;transform:scale(.4) rotate(-10deg);transition:.35s cubic-bezier(.2,1.6,.4,1)}
+.ft.sel .p1{opacity:1;transform:scale(1) rotate(-4deg)}
+.vs{align-self:center;font-family:var(--disp);font-weight:900;font-size:clamp(28px,4vw,60px);color:var(--am);text-shadow:0 0 30px rgba(255,176,32,.5);animation:vs 1.6s ease-in-out infinite}
+@keyframes vs{50%{transform:scale(1.15) rotate(-6deg)}}
+
+/* ===== M1 base64 ===== */
+.b64{display:flex;flex-direction:column;gap:12px}
+.b64 .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.raw{font-family:var(--mono);font-size:14px;color:var(--mu);word-break:break-all;min-height:1.5em}
+.raw .c{color:var(--tx)}
+.out{font-family:var(--mono);font-size:15px;color:var(--g2);word-break:break-all;min-height:3.2em;padding:12px;border-radius:12px;background:rgba(0,0,0,.45);border:1px dashed rgba(62,240,138,.35);text-shadow:0 0 12px rgba(62,240,138,.35)}
+.out .hdr{color:var(--mu)}
+.qbox{border:1px solid var(--mu2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.qbox .q{font-weight:700;font-size:15px}
+.opts{display:flex;gap:8px;flex-wrap:wrap}
+.opt{font-size:14px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--mu2);text-align:left;transition:.2s;line-height:1.3}
+.opt:hover{border-color:var(--g2)}
+.opt.ok{border-color:var(--g2);background:rgba(62,240,138,.12);color:var(--g3)}
+.opt.bad{border-color:var(--rd);background:rgba(255,59,78,.12);color:#ffc2c8}
+.opt:disabled{pointer-events:none}
+
+/* ===== M2 request builder ===== */
+.req{font-family:var(--mono);font-size:14px;line-height:1.5;display:flex;flex-direction:column;gap:7px}
+.req .line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.req .m{color:#03140a;background:var(--am);font-weight:700;padding:1px 7px;border-radius:5px}
+.req .h{color:var(--mu);min-width:9.5em}
+.slot{min-width:12em;min-height:32px;border:1.5px dashed var(--mu2);border-radius:8px;padding:5px 10px;color:var(--mu2);transition:.25s;display:inline-flex;align-items:center}
+.slot.act{border-color:var(--am);color:var(--am);box-shadow:0 0 0 3px rgba(255,176,32,.12)}
+.slot.fill{border-style:solid;border-color:var(--g2);color:var(--g3);background:rgba(62,240,138,.08)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.chip{font-family:var(--mono);font-size:14px;padding:8px 12px;border-radius:9px;border:1px solid var(--mu2);background:rgba(0,0,0,.35);transition:.2s}
+.chip:hover{border-color:var(--am);color:var(--am);transform:translateY(-2px)}
+.chip.used{opacity:.18;pointer-events:none}
+.wire{position:relative;height:56px;margin:4px 0}
+.wire .ln{position:absolute;left:40px;right:40px;top:50%;height:2px;background:repeating-linear-gradient(90deg,var(--mu2) 0 8px,transparent 8px 14px)}
+.wire .nd{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:13px;padding:6px 9px;border-radius:8px;border:1px solid var(--mu2);background:#06100c}
+.wire .nd.l{left:0}.wire .nd.r{right:0}
+.wire .pk{position:absolute;top:50%;left:40px;width:16px;height:16px;margin-top:-8px;border-radius:4px;background:var(--am);box-shadow:0 0 16px var(--am);opacity:0}
+.wire .pk.fly{animation:fly 1.1s cubic-bezier(.6,0,.3,1) forwards}
+.wire .pk.back{background:var(--g2);box-shadow:0 0 16px var(--g2);animation:flyb 1s cubic-bezier(.6,0,.3,1) forwards}
+@keyframes fly{0%{opacity:1;left:40px}100%{opacity:1;left:calc(100% - 56px)}}
+@keyframes flyb{0%{opacity:1;left:calc(100% - 56px)}100%{opacity:1;left:40px}}
+.tcard{border-radius:14px;padding:14px;border:1px solid rgba(62,240,138,.5);background:linear-gradient(135deg,rgba(33,160,56,.18),rgba(0,0,0,.3));display:flex;flex-direction:column;gap:8px;animation:rise .6s both}
+.tcard .tt{font-family:var(--disp);font-weight:900;font-size:16px;text-transform:uppercase;color:var(--g2)}
+.jwe{font-family:var(--mono);font-size:14px;word-break:break-all;line-height:1.5}
+.jwe i{font-style:normal}
+.jwe .p0{color:#ff8fb3}.jwe .p1{color:var(--mu)}.jwe .p2{color:var(--ice)}.jwe .p3{color:var(--g2)}.jwe .p4{color:var(--am)}
+
+/* ===== M3 models ===== */
+.radar{position:relative;width:clamp(120px,15vw,190px);aspect-ratio:1;border-radius:50%;border:1px solid rgba(62,240,138,.4);flex:none;
+  background:radial-gradient(circle,transparent 30%,rgba(62,240,138,.06) 31%,transparent 32%,transparent 62%,rgba(62,240,138,.06) 63%,transparent 64%)}
+.radar::before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,rgba(62,240,138,.5),transparent 25%);animation:spin 2.4s linear infinite;opacity:0;transition:.3s}
+.radar.on::before{opacity:1}
+.radar::after{content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%;background:var(--g2);box-shadow:0 0 12px var(--g2)}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;flex:1}
+.mcard{border-radius:12px;border:1px solid rgba(62,240,138,.35);padding:12px;background:rgba(0,0,0,.3);display:flex;flex-direction:column;gap:6px;animation:pop .45s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.6) rotate(-3deg)}}
+.mcard .nm{font-family:var(--mono);font-weight:700;font-size:15px;color:var(--g3);word-break:break-all}
+.mcard .ds{font-size:14px;color:var(--mu);line-height:1.35}
+.sw{display:inline-flex;border:1px solid var(--mu2);border-radius:10px;overflow:hidden}
+.sw button{font-family:var(--mono);font-size:13px;padding:8px 12px;color:var(--mu)}
+.sw button.on{background:var(--g2);color:#03140a;font-weight:700}
+
+/* ===== M4 expiry ===== */
+.big401{font-family:var(--disp);font-weight:900;font-size:clamp(46px,8vw,120px);color:var(--rd);line-height:.9;text-shadow:0 0 40px rgba(255,59,78,.5)}
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fst{font-family:var(--mono);font-size:14px;padding:10px 12px;border-radius:10px;border:1px solid var(--mu2);color:var(--mu);transition:.3s}
+.fst.lit{border-color:var(--g2);color:var(--g3);background:rgba(62,240,138,.1);box-shadow:0 0 18px rgba(62,240,138,.25)}
+.fst.red{border-color:var(--rd);color:#ffc2c8;background:rgba(255,59,78,.1)}
+.arr{color:var(--mu2);font-family:var(--mono)}
+.clock{font-family:var(--mono);font-weight:700;font-size:clamp(40px,6.5vw,92px);letter-spacing:-.02em;color:var(--am);text-shadow:0 0 30px rgba(255,176,32,.45)}
+
+/* ===== M5 cache rounds ===== */
+.safe{display:flex;gap:16px;align-items:stretch;flex-wrap:wrap}
+.file{flex:1;min-width:220px;border-radius:12px;border:1px solid var(--mu2);padding:12px;background:rgba(0,0,0,.35);position:relative}
+.file .fn{font-family:var(--mono);font-size:13px;color:var(--am);margin-bottom:6px}
+.sit{flex:1.2;min-width:240px;display:flex;flex-direction:column;gap:10px}
+.sit .stx{font-size:clamp(16px,1.6vw,22px);font-weight:700;line-height:1.35}
+.tbar{height:6px;border-radius:3px;background:rgba(143,168,154,.2);overflow:hidden}
+.tbar b{display:block;height:100%;width:100%;background:var(--am);transform-origin:left}
+.dots{display:flex;gap:6px}
+.dots i{width:12px;height:12px;border-radius:50%;border:1px solid var(--mu2)}
+.dots i.ok{background:var(--g2);border-color:var(--g2)}.dots i.bad{background:var(--rd);border-color:var(--rd)}.dots i.cur{border-color:var(--am)}
+
+/* ===== M6 chat ===== */
+.chatw{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;height:100%;min-height:260px}
+.chat{display:flex;flex-direction:column;gap:8px;min-height:0}
+.msgs{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:4px 2px;min-height:120px}
+.msg{max-width:88%;font-size:15px;line-height:1.45;padding:10px 12px;border-radius:14px;animation:rise .35s both}
+.msg.u{align-self:flex-end;background:var(--g);color:#fff;border-bottom-right-radius:4px}
+.msg.a{align-self:flex-start;background:rgba(255,255,255,.06);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.a .who{font-family:var(--mono);font-size:13px;color:var(--g2);display:block;margin-bottom:3px}
+.typing{display:inline-flex;gap:4px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--g2);animation:tp 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tp{50%{transform:translateY(-5px);opacity:.4}}
+.sugg{display:flex;gap:6px;flex-wrap:wrap}
+.sugg button{font-size:13px;padding:6px 10px;border-radius:999px;border:1px solid var(--mu2);color:var(--mu)}
+.sugg button:hover{border-color:var(--g2);color:var(--g2)}
+.cin{display:flex;gap:8px}
+.jsonlive{font-size:14px;min-height:0;min-width:0}.jsonlive .code{white-space:pre-wrap;word-break:break-word}
+
+/* ===== M7 arcade ===== */
+.arc{display:flex;flex-direction:column;gap:12px;height:100%}
+.arena{position:relative;flex:1;min-height:150px;border-radius:14px;border:1px solid var(--mu2);background:repeating-linear-gradient(0deg,rgba(62,240,138,.04) 0 1px,transparent 1px 28px),rgba(0,0,0,.35);overflow:hidden;display:grid;place-items:center}
+.rc{display:flex;flex-direction:column;align-items:center;gap:4px;animation:incoming .35s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes incoming{from{transform:scale(.3) translateY(-60px);opacity:0}}
+.rc .code3{font-family:var(--disp);font-weight:900;font-size:clamp(48px,7vw,96px);line-height:1}
+.rc .ms{font-family:var(--mono);font-size:14px;color:var(--mu)}
+.rc.ok .code3{color:var(--g2)}.rc.e4 .code3{color:var(--am)}.rc.e5 .code3{color:var(--rd)}.rc.au .code3{color:#ff8fb3}
+.acts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.act{font-size:14px;font-weight:700;padding:12px 8px;border-radius:12px;border:1px solid var(--mu2);background:rgba(0,0,0,.3);line-height:1.25;transition:.15s}
+.act:hover{border-color:var(--g2)}
+.act:active{transform:scale(.96)}
+.act .ic{display:block;font-size:20px;margin-bottom:2px}
+.hearts{font-size:18px;letter-spacing:2px}
+.boom{position:absolute;inset:0;pointer-events:none}
+.burst{position:absolute;left:50%;top:50%;width:8px;height:8px;border-radius:50%}
+
+/* ===== M8 proxy ===== */
+.px{display:flex;flex-direction:column;gap:12px}
+.pxd{position:relative;display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:clamp(18px,4vw,56px);align-items:center;padding:6px 0}
+.pn{border-radius:14px;border:1px solid var(--mu2);padding:12px;text-align:center;background:rgba(0,0,0,.35);position:relative;z-index:2}
+.pn .ic{font-size:26px}.pn .nm{font-family:var(--disp);font-weight:800;font-size:14px;text-transform:uppercase;margin-top:4px}
+.pn .sb{font-family:var(--mono);font-size:13px;color:var(--mu);margin-top:3px}
+.pn.srv{border-color:var(--g2);box-shadow:0 0 30px rgba(62,240,138,.15)}
+.pn .vault{margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--mu2);border:1px dashed var(--mu2);border-radius:8px;padding:5px}
+.pn .vault.on{color:var(--g2);border-color:var(--g2);border-style:solid}
+.pkt{position:absolute;z-index:3;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:var(--am);box-shadow:0 0 14px var(--am);opacity:0;left:10%}
+.doors4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.vd{border-radius:12px;border:1px solid var(--mu2);padding:12px 10px;font-size:14px;font-weight:700;line-height:1.3;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(0,0,0,.3));transition:.2s;position:relative;min-height:84px}
+.vd:hover{border-color:var(--am);transform:translateY(-3px)}
+.vd .ic{display:block;font-size:22px;margin-bottom:4px}
+.vd.bad{border-color:var(--rd);background:rgba(255,59,78,.12);animation:shakeX .45s}
+.vd.ok{border-color:var(--g2);background:rgba(62,240,138,.12)}
+.vd small{display:block;font-weight:500;font-size:13px;color:var(--mu);margin-top:6px}
+
+/* ===== M9 pytest ===== */
+.term{font-family:var(--mono);font-size:14px;line-height:1.7;background:#020504;border:1px solid var(--mu2);border-radius:12px;padding:12px 14px;min-height:180px;white-space:pre-wrap}
+.term .p{color:var(--g2)}.term .f{color:var(--rd)}.term .y{color:var(--am)}.term .m{color:var(--mu)}
+.term .bar-ok{display:block;background:var(--g);color:#fff;padding:0 6px;margin-top:4px}
+.term .bar-bad{display:block;background:var(--rd);color:#fff;padding:0 6px;margin-top:4px}
+
+/* ===== M10 boss ===== */
+.boss{display:flex;flex-direction:column;gap:12px;height:100%}
+.bhead{display:flex;align-items:center;gap:14px}
+.bface{width:clamp(56px,7vw,88px);aspect-ratio:1;border-radius:16px;flex:none;position:relative;background:linear-gradient(160deg,#2a0b10,#120507);border:2px solid var(--rd);display:grid;place-items:center;font-size:clamp(28px,3.6vw,44px);box-shadow:0 0 30px rgba(255,59,78,.3)}
+.bface.hit{animation:glitch .4s steps(2) 2}
+.hp{flex:1;display:flex;flex-direction:column;gap:6px}
+.hp .nm{font-family:var(--disp);font-weight:900;font-size:clamp(14px,1.5vw,19px);text-transform:uppercase;color:#ffc2c8}
+.hp .hb2{height:12px;border-radius:6px;background:rgba(255,59,78,.15);overflow:hidden;border:1px solid rgba(255,59,78,.4)}
+.hp .hb2 b{display:block;height:100%;background:linear-gradient(90deg,#ff3b4e,#ff8f6b);transition:width .5s cubic-bezier(.2,1.4,.4,1)}
+.me{font-family:var(--mono);font-size:14px;color:var(--mu)}
+.bq{font-size:clamp(16px,1.6vw,21px);font-weight:800;line-height:1.35}
+.bopts{display:flex;flex-direction:column;gap:8px}
+.bopts .opt{width:100%}
+
+/* ===== M11 credits ===== */
+.fin{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;height:100%;position:relative;overflow:hidden}
+.fin .rk{font-family:var(--disp);font-weight:900;font-size:clamp(28px,4.6vw,66px);text-transform:uppercase;color:var(--am);line-height:1;text-shadow:0 0 40px rgba(255,176,32,.4)}
+.fin .sc{font-family:var(--mono);font-size:16px;color:var(--mu)}
+.roll{position:relative;height:clamp(110px,26vh,240px);width:100%;overflow:hidden;-webkit-mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent);mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent)}
+.roll .in{position:absolute;left:0;right:0;top:100%;animation:roll 30s linear infinite;display:flex;flex-direction:column;gap:12px}
+.roll .in div{font-size:15px;color:var(--mu)}
+.roll .in div b{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.2em;color:var(--g2);text-transform:uppercase;font-weight:500}
+@keyframes roll{to{transform:translateY(calc(-100% - 260px))}}
+.conf{position:fixed;top:-20px;width:8px;height:14px;z-index:220;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+@media(max-height:500px){
+  .ft ul{font-size:14px;gap:3px}.ft{gap:6px}
+  .term{min-height:120px}
+  .arena{min-height:110px}
+  .act{padding:9px 6px;font-size:14px}
+  .act .ic{font-size:16px}
+}
+@media(max-width:820px){
+  .acts{grid-template-columns:repeat(2,1fr)}
+  .doors4{grid-template-columns:repeat(2,1fr)}
+  .chatw{grid-template-columns:1fr}
+  .jsonlive{display:none}
+}
+</style>
+<style>.mbody .code{width:100%}</style>
 <body>
+<canvas id="fx"></canvas><div class="glow"></div>
+<div class="grain"></div><div class="scan"></div><div class="vign"></div>
 
 <div id="rotate">
   <div class="phone"></div>
   <h2>Поверни телефон</h2>
-  <p>Это путешествие показывается горизонтально — как в кино. Разверни устройство в альбомный режим.</p>
-  <button id="rotateSkip" type="button">Экран не поворачивается? Продолжить так →</button>
+  <p>Операция идёт в широком формате, как в кино. Разверни устройство горизонтально.</p>
+  <button id="rotateSkip" type="button">Не поворачивается? Продолжить так →</button>
 </div>
+
+<div id="start">
+  <div class="st-wrap">
+    <div class="keycard" aria-hidden="true">
+      <div class="kc-chip"></div><div class="kc-orb"></div>
+      <div class="kc-big">30:00</div><div class="kc-lbl">ACCESS TOKEN</div>
+      <div class="kc-txt" id="kcTxt">eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIn0..Dx7iF7cC</div>
+    </div>
+    <div class="st-left">
+      <div class="eyebrow">ДГТУ · Кафедра ИТ · Практическая работа №5</div>
+      <h1 class="st-title">Операция<span>«Токен»</span></h1>
+      <p class="st-sub">Российские GPT-модели. Получи доступ к GigaChat, удержи токен 30 минут и не спали ключ.</p>
+      <div class="st-btns">
+        <button class="big" id="goFs" type="button">▶ Начать во весь экран</button>
+        <button class="ghost" id="goWin" type="button">в окне</button>
+      </div>
+      <div class="st-note"><i>📱</i> На телефоне держи экран горизонтально. Звук лучше включить.</div>
+    </div>
+  </div>
+</div>
+
+<div class="lb" id="lbT"></div><div class="lb" id="lbB"></div>
+<div id="cine"><div id="cineTxt"></div><div class="cskip">ТАП — ПРОПУСТИТЬ ▸</div></div>
+<div id="slam"><div class="s1" id="slam1"></div><div class="s2" id="slam2"></div></div>
+<div class="door" id="doorL"><div class="dtext" id="dL"></div></div>
+<div class="door" id="doorR"><div class="dtext" id="dR"></div></div>
 
 <div id="app">
-  <div class="plx" id="plx1"></div>
-  <div class="plx" id="plx2"></div>
-  <div class="glowfloor"></div>
-  <div id="speed"></div>
-
-  <div id="viewport">
-    <div id="world">
-      <svg id="wireSvg" preserveAspectRatio="none"><g id="wireG"></g></svg>
-      <div id="nodes"></div>
-      <div id="pkt">
-        <div class="halo"></div>
-        <div class="cube" id="cube">
-          <div class="cf">01001000</div><div class="cf">4A 53 4F 4E</div>
-          <div class="cf">PAYLOAD</div><div class="cf">0x1F3A</div>
-          <div class="cf">11010110</div><div class="cf">TCP/IP</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <header id="hud">
-    <div class="brand">PACKET<b> · ПР №3 · ДГТУ</b></div>
+    <div class="brand">ТОКЕН<span>·</span><span class="bl"> ПР №5</span></div>
     <div class="track" id="track"></div>
-    <div class="stname" id="stname"></div>
-    <button class="hbtn" id="fsBtn" type="button" aria-label="Полноэкранный режим">ВЕСЬ ЭКРАН</button>
+    <div id="tok" title="Жизнь токена доступа"><span class="dot"></span><span id="tokT">НЕТ ТОКЕНА</span><span class="fuse"><b id="tokF"></b></span></div>
+    <div class="xp"><span class="rank" id="rank">СТАЖЁР</span><span class="bar"><b id="xpb"></b></span><span id="xpv">0</span><span class="combo" id="cmb">×1</span></div>
+    <button class="hb" id="snd" type="button" aria-label="Звук">♪ ВКЛ</button>
+    <button class="hb" id="fs" type="button" aria-label="Весь экран">⛶</button>
   </header>
-
-  <div id="panel">
-    <div class="pinner" id="pinner">
-      <div class="pmain">
-        <div class="ptag" id="ptag"></div>
-        <div id="ptitle"></div>
-        <div class="pbodywrap" id="pbodywrap"><div id="pbody"></div></div>
-        <div id="ptech"></div>
-      </div>
-      <div class="pside">
-        <button class="pbtn pnext" id="nextBtn" type="button">ДАЛЬШЕ →</button>
-        <button class="pbtn pdoss" id="dossBtn" type="button">ДОСЬЕ</button>
-        <button class="pbtn pback" id="backBtn" type="button">← назад</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="xform">
-    <div class="xjson" id="xjson"></div>
-    <div id="xflash"></div>
-    <div class="xcaption" id="xcap"></div>
-  </div>
-
-  <div id="intro">
-    <div class="ieyebrow">ДГТУ · КАФЕДРА ИНФОРМАЦИОННЫХ ТЕХНОЛОГИЙ · ПРАКТИЧЕСКАЯ РАБОТА №3</div>
-    <div class="ititle">PACKET</div>
-    <div class="isub">
-      Клиент-серверная архитектура и API — не в виде презентации, а в виде путешествия.
-      Напиши любое сообщение: оно станет твоим запросом, и ты проследишь его путь до сервера и обратно.
-    </div>
-    <div class="term">
-      <div class="tbar"><i></i><i></i><i></i><span>client@dstu — new request</span></div>
-      <div class="tbody">
-        <div class="tprompt">$ введи сообщение для отправки на сервер</div>
-        <div class="trow">
-          <input id="msg" type="text" maxlength="42" placeholder="Привет, сервер!" autocomplete="off" spellcheck="false">
-          <button id="send" type="button">ОТПРАВИТЬ</button>
-        </div>
-        <div class="thint">↵ Enter — отправить · стрелки ← → — навигация по маршруту</div>
-      </div>
-    </div>
-    <div class="istart">
-      <button class="hbtn" id="fsBtn2" type="button">▶ ЗАПУСТИТЬ ВО ВЕСЬ ЭКРАН (рекомендуется)</button>
-    </div>
-  </div>
-
-  <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle">
-    <div class="mhead">
-      <span class="mtag" id="mtag">ДОСЬЕ</span>
-      <span class="mtitle" id="mtitle"></span>
-      <button class="mclose" id="mclose" type="button">ЗАКРЫТЬ ✕</button>
-    </div>
-    <div class="mbody" id="mbody"></div>
-  </div>
+  <main id="scene"></main>
 </div>
 
+<div id="toasts" aria-live="polite"></div>
+<div id="modal" role="dialog" aria-modal="true"><div class="mbox"><div class="mhead"><span class="stamp">СЕКРЕТНО</span><h3 id="mT"></h3><button class="btn small" id="mX" type="button">Закрыть ✕</button></div><div class="mbody" id="mB"></div></div></div>
 <script>
 "use strict";
-/* ============================================================
-   DATA — маршрут пакета
-   ============================================================ */
-var USER_MSG = "Привет, сервер!";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function uuid4(){ if(crypto.randomUUID) return crypto.randomUUID();
+  const b=crypto.getRandomValues(new Uint8Array(16)); b[6]=b[6]&15|64; b[8]=b[8]&63|128;
+  const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join(''); return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;}
+function b64(str){ const bytes=new TextEncoder().encode(str); let bin=''; bytes.forEach(x=>bin+=String.fromCharCode(x)); return btoa(bin); }
+function unb64(s){ try{ const bin=atob(s); return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0))); }catch(e){ return '⚠ не base64'; } }
+function rs(n,al='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'){let s='';const v=crypto.getRandomValues(new Uint8Array(n));for(const x of v)s+=al[x%al.length];return s}
+function fakeToken(){ return ['eyJhbGciOiJkaXIiLCJlbmMiOiJBMTI4R0NNIiwidHlwIjoiSldUIn0','',rs(16),rs(64),rs(22)]; }
 
-var ST = [
- {ic:'🖥',lbl:'КЛИЕНТ',tag:'ТОЧКА ОТПРАВЛЕНИЯ · 01',
-  t:'Твой запрос родился',
-  b:'Ты — <b>клиент</b>. Браузер, мобильное приложение или Postman: тот, кто начинает диалог. Сервер сам никогда не пишет первым — он ждёт.<br><br>Клиенту запрещено лезть в базу данных сервера напрямую. Вместо этого сервер публикует <span class="hi">API</span> — строго описанный набор точек входа. API это <b>контракт</b>: пока он соблюдается, сервер можно переписать хоть с PHP на Go, и ты не заметишь.',
-  k:'Контрольный вопрос №1 · клиент-серверная архитектура и API',
-  d:'cs'},
+/* ================= STATE ================= */
+const S={i:0,xp:0,combo:1,best:0,sound:true,tok:null,tokExp:0,warp:0,done:new Set(),boss:null};
+const now=()=>Date.now()+S.warp;
+const RANKS=[[0,'СТАЖЁР'],[400,'АГЕНТ'],[1100,'ОПЕРАТИВНИК'],[2000,'ХРАНИТЕЛЬ ТОКЕНА'],[3000,'ГЛАВНЫЙ ПО API']];
+function rankOf(x){let r=RANKS[0];for(const k of RANKS) if(x>=k[0]) r=k; return r;}
 
- {ic:'{ }',lbl:'JSON',tag:'СЕРИАЛИЗАЦИЯ · 02',
-  t:'Текст стал структурой',
-  b:'Твоё сообщение больше не строка — это <span class="hi">JSON</span>-объект с полями. Клиент и сервер написаны на разных языках и живут на разных континентах, поэтому данные превращают в общий текстовый формат. Это и называется <b>сериализацией</b>.<br><br>Теперь объект упакован в байты — тот самый куб, за которым мы следим.',
-  k:'Контрольный вопрос №5 · JSON и XML',
-  d:'json'},
+/* ================= AUDIO ================= */
+let AC=null, master=null, drone=null;
+function audio(){ if(AC) return AC; try{ AC=new (window.AudioContext||window.webkitAudioContext)(); master=AC.createGain(); master.gain.value=.5; master.connect(AC.destination);}catch(e){} return AC; }
+function tone(f,d=.12,type='sine',v=.25,slide=0,delay=0){ if(!S.sound||!audio()) return; const t=AC.currentTime+delay;
+  const o=AC.createOscillator(), g=AC.createGain(); o.type=type; o.frequency.setValueAtTime(f,t); if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.008); g.gain.exponentialRampToValueAtTime(.0001,t+d); o.connect(g); g.connect(master); o.start(t); o.stop(t+d+.05); }
+function noise(d=.3,v=.25,fq=1200,delay=0,q=.8){ if(!S.sound||!audio()) return; const t=AC.currentTime+delay;
+  const b=AC.createBuffer(1,AC.sampleRate*d,AC.sampleRate), ch=b.getChannelData(0); for(let i=0;i<ch.length;i++) ch[i]=Math.random()*2-1;
+  const s=AC.createBufferSource(); s.buffer=b; const f=AC.createBiquadFilter(); f.type='bandpass'; f.frequency.value=fq; f.Q.value=q;
+  const g=AC.createGain(); g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(.0001,t+d); s.connect(f); f.connect(g); g.connect(master); s.start(t); }
+const SFX={
+  click:()=>tone(900,.05,'square',.06),
+  tick:()=>tone(1800+Math.random()*400,.02,'square',.035),
+  ok:()=>{tone(660,.1,'triangle',.22);tone(990,.16,'triangle',.2,0,.08)},
+  win:()=>{[523,659,784,1046].forEach((f,i)=>tone(f,.22,'triangle',.2,0,i*.09))},
+  bad:()=>{tone(180,.25,'sawtooth',.18,-80);noise(.15,.12,400)},
+  slam:()=>{tone(110,.6,'sine',.5,-70);noise(.5,.35,300,0,.5)},
+  door:()=>{noise(.55,.25,700,0,.4);tone(60,.5,'sine',.3)},
+  whoosh:()=>{noise(.45,.2,2400,0,.6)},
+  alarm:()=>{for(let i=0;i<4;i++){tone(880,.18,'square',.12,0,i*.36);tone(660,.18,'square',.12,0,i*.36+.18)}},
+  coin:()=>{tone(988,.07,'square',.12);tone(1319,.18,'square',.12,0,.07)},
+  zap:()=>tone(1400,.18,'sawtooth',.1,-1200),
+  boss:()=>{tone(70,.9,'sawtooth',.25,-20);tone(105,.9,'sawtooth',.15,-30)},
+};
+function startDrone(){ if(!S.sound||!audio()||drone) return; const o1=AC.createOscillator(),o2=AC.createOscillator(),g=AC.createGain(),f=AC.createBiquadFilter(),l=AC.createOscillator(),lg=AC.createGain();
+  o1.type='sawtooth';o2.type='sawtooth';o1.frequency.value=55;o2.frequency.value=55.4;f.type='lowpass';f.frequency.value=260;l.frequency.value=.07;lg.gain.value=120;
+  l.connect(lg);lg.connect(f.frequency);g.gain.value=.0;o1.connect(f);o2.connect(f);f.connect(g);g.connect(master);o1.start();o2.start();l.start();
+  g.gain.linearRampToValueAtTime(.05,AC.currentTime+3); drone={g,o1,o2,l}; }
+function stopDrone(){ if(!drone) return; try{drone.g.gain.linearRampToValueAtTime(0,AC.currentTime+.4); const d=drone; setTimeout(()=>{d.o1.stop();d.o2.stop();d.l.stop()},500);}catch(e){} drone=null; }
 
- {ic:'📮',lbl:'HTTP',tag:'ФОРМИРОВАНИЕ ЗАПРОСА · 03',
-  t:'Пакет получил адрес и глагол',
-  b:'Вокруг данных нарос HTTP-конверт из четырёх частей: <span class="hi">метод</span> (что делаем), <span class="hi">URL</span> (с чем), <span class="hi">заголовки</span> (метаданные) и <span class="hi">тело</span> (сами данные).<br><br>Метод — это глагол. Один и тот же адрес <b>/posts/1</b> ведёт себя по-разному: GET прочитает, PUT обновит, DELETE удалит.',
-  k:'Контрольные вопросы №3 и №4 · HTTP-методы и пример запроса',
-  d:'http'},
-
- {ic:'🔒',lbl:'TLS',tag:'ШИФРОВАНИЕ КАНАЛА · 04',
-  t:'Пакет надел броню',
-  b:'Между тобой и сервером — десятки чужих роутеров. По открытому HTTP любой из них прочитал бы твой пароль как открытку.<br><br><span class="hi">TLS</span> оборачивает пакет в шифрованную оболочку: стороны обмениваются ключами, и дальше содержимое видят только они. Буква <b>S</b> в HTTPS — это именно она.',
-  k:'Рукопожатие TLS · сертификат · симметричный ключ сессии',
-  d:null, skin:'enc'},
-
- {ic:'🛂',lbl:'ЛИЧНОСТЬ',tag:'API GATEWAY · РУБЕЖ 1 · 05',
-  t:'Стоп. Кто ты такой?',
-  b:'Пакет упёрся в <span class="hi">API Gateway</span> — единую дверь перед всеми сервисами компании. Первое, что здесь спрашивают: предъяви документы.<br><br>Шлюз читает заголовок <b>Authorization</b>, проверяет подпись JWT или ищет API-ключ. Токен поддельный или просрочен — запрос умирает здесь, с кодом <b>401</b>, и до бэкенда не доедет.',
-  k:'Контрольный вопрос №7 · аутентификация и авторизация',
-  d:'auth'},
-
- {ic:'⏳',lbl:'ЛИМИТЫ',tag:'API GATEWAY · РУБЕЖ 2 · 06',
-  t:'А не слишком ли часто?',
-  b:'Документы в порядке — но и у своих есть квота. Алгоритм <span class="hi">token bucket</span> выдаёт жетоны с постоянной скоростью: есть жетон — проходи, кончились — <b>429 Too Many Requests</b>.<br><br>Это защита и от DDoS, и от просто сломанного клиента, зациклившегося на запросе.',
-  k:'Token bucket · sliding window · квоты по тарифу',
-  d:'owasp', skin:'warn'},
-
- {ic:'🔀',lbl:'МАРШРУТ',tag:'API GATEWAY · РУБЕЖ 3 · 07',
-  t:'Куда тебя направить',
-  b:'Шлюз смотрит на путь, заголовки и версию API и решает, какому из сотни сервисов отдать запрос.<br><br>В этом вся магия: <b>клиент знает один адрес</b>, а за ним сервисы переезжают, масштабируются и умирают — и клиент об этом никогда не узнает. Заодно шлюз пишет логи и ставит trace-id: через него идёт весь трафик, значит только здесь систему видно целиком.',
-  k:'Маршрутизация · трансформация · агрегация · observability',
-  d:'giants', skin:'enc'},
-
- {ic:'⚙️',lbl:'БЭКЕНД',tag:'СЕРВЕР · 08',
-  t:'Запрос у цели',
-  b:'Сервис получил пакет — расшифрованный, с проверенной подписью, в рамках квоты. Ему осталось единственное, ради чего он существует: <b>бизнес-логика</b>.<br><br>Он разбирает тело запроса, валидирует поля, решает, что делать, и при необходимости идёт в базу данных.',
-  k:'Контрольный вопрос №6 · обработка HTTP-запроса на сервере',
-  d:'server'},
-
- {ic:'🗄',lbl:'БАЗА',tag:'ХРАНИЛИЩЕ · 09',
-  t:'Данные найдены',
-  b:'Сервис формирует запрос к базе, получает строки и собирает из них ответный объект.<br><br>Обрати внимание: <b>база данных не торчит в интернет</b>. До неё можно дотянуться только через сервис, а до сервиса — только через шлюз. Это называется эшелонированной защитой: каждый слой прикрывает следующий.',
-  k:'SQL-запрос · пул соединений · изоляция периметра',
-  d:null},
-
- {ic:'📦',lbl:'ОТВЕТ',tag:'ОБРАТНЫЙ ПУТЬ · 10',
-  t:'200 OK — пакет возвращается',
-  b:'Результат сериализуется обратно в JSON, к нему добавляется <span class="hi">статус-код</span> и заголовки. И пакет летит домой тем же путём.<br><br><b>200</b> OK · <b>201</b> Created · <b>400</b> Bad Request · <b>401</b> Unauthorized · <b>403</b> Forbidden · <b>404</b> Not Found · <b>429</b> Too Many Requests · <b>500</b> Internal Server Error.',
-  k:'Первая цифра решает всё: 2xx успех · 4xx виноват клиент · 5xx виноват сервер',
-  d:null, skin:'resp'},
-
- {ic:'🏁',lbl:'ФИНИШ',tag:'ПРИБЫТИЕ · 11',
-  t:'Ответ дома. Прошло 200 мс',
-  b:'Твоё сообщение ушло строкой текста, стало структурой, оделось в конверт и броню, доказало личность, уложилось в квоту, нашло свой сервис, сходило в базу — и вернулось.<br><br>Всё это — быстрее, чем ты успел моргнуть. <b>Дальше — лаборатория:</b> терминал Postman с заданиями практической и экзаменационные билеты.',
-  k:'Маршрут пройден полностью · 11 контрольных точек',
-  d:null, skin:'resp'},
-
- {ic:'🧪',lbl:'POSTMAN',tag:'ЛАБОРАТОРИЯ · 12',lab:true,
-  t:'Терминал Postman',
-  b:'Все <b>10 рабочих заданий</b> практической работы №3 в интерактивном виде. Выбери задание, нажми Send — и увидишь, что именно возвращает <span class="hi">postman-echo.com</span> и почему.',
-  k:'GET · POST · PUT · DELETE · Headers · Basic Auth · form-data · коллекции · окружения',
-  d:'postman', btn:'ОТКРЫТЬ ТЕРМИНАЛ'},
-
- {ic:'🎓',lbl:'ЭКЗАМЕН',tag:'ЛАБОРАТОРИЯ · 13',lab:true,
-  t:'Экзаменационные билеты',
-  b:'<b>7 контрольных вопросов</b> из методички. Возьми билет, попробуй ответить сам — потом переверни и сверься.',
-  k:'Устный опрос · самопроверка перед защитой',
-  d:'exam', btn:'ВЗЯТЬ БИЛЕТ'},
-
- {ic:'✦',lbl:'ТИТРЫ',tag:'КОНЕЦ · 14',lab:true,
-  t:'Титры',
-  b:'Практическая работа №3 «Клиент-серверная архитектура. API». Источники, границы материала и всё, что осталось сказать.',
-  k:'Спасибо за просмотр',
-  d:'credits', btn:'СМОТРЕТЬ ТИТРЫ'}
-];
-
-/* ============================================================
-   ENGINE
-   ============================================================ */
-var world=document.getElementById('world'), pkt=document.getElementById('pkt'),
-    nodesEl=document.getElementById('nodes'), wireG=document.getElementById('wireG'),
-    panel=document.getElementById('panel'), pinner=document.getElementById('pinner'),
-    track=document.getElementById('track'), plx1=document.getElementById('plx1'),
-    plx2=document.getElementById('plx2'), speed=document.getElementById('speed'),
-    stnameEl=document.getElementById('stname');
-var GAP=0, cur=0, busy=false, maxSeen=0, started=false;
-
-function vw(){return window.innerWidth;}
-var lastW=-1;
-function layout(){
-  var w=vw();
-  GAP=Math.max(330,Math.min(w*0.82,620));
-  var total=GAP*(ST.length-1)+w;
-  /* Геометрия зависит только от ширины. Открытие экранной клавиатуры и
-     скрытие адресной строки меняют лишь высоту и раньше вызывали полную
-     перестройку SVG + 14 узлов на каждое событие resize. */
-  if(w!==lastW){
-    lastW=w;
-    world.style.width=total+'px';
-    var svg=document.getElementById('wireSvg');
-    svg.setAttribute('width',total); svg.setAttribute('viewBox','0 0 '+total+' 220');
-    svg.style.width=total+'px';
-    drawWire(total);
-    [].forEach.call(nodesEl.children,function(n,i){n.style.left=nx(i)+'px';});
-  }
-  place(cur,true);
-  /* ФИКС: drawWire пересоздаёт сегменты с opacity:0, поэтому без paint()
-     после ресайза пройденный маршрут терял зелёную подсветку. */
-  paint();
-}
-/* ресайз схлопываем в один кадр — мобильные браузеры шлют его пачками */
-var rafPending=false;
-function onResize(){
-  if(rafPending) return;
-  rafPending=true;
-  requestAnimationFrame(function(){ rafPending=false; layout(); checkOrient(); });
-}
-function nx(i){return vw()/2 + GAP*i;}
-
-function drawWire(total){
-  var y=110, h='';
-  for(var i=0;i<ST.length-1;i++){
-    var x1=nx(i), x2=nx(i+1), mid=(x1+x2)/2;
-    var d='M '+x1+' '+y+' C '+mid+' '+y+', '+mid+' '+y+', '+x2+' '+y;
-    var isLab=ST[i+1].lab;
-    h+='<path class="wline'+(isLab?' wlab':'')+'" d="'+d+'"/>';
-    h+='<path class="wseg'+(isLab?' wlab-g':' wglow')+'" data-i="'+i+'" d="'+d+'" style="opacity:0"/>';
-  }
-  wireG.innerHTML=h;
-}
-
-function buildNodes(){
-  ST.forEach(function(s,i){
-    var d=document.createElement('div');
-    d.className='node'+(s.lab?' lab':'');
-    d.innerHTML='<div class="nring"></div><div class="nico">'+s.ic+'</div><div class="nlbl">'+s.lbl+'</div>';
-    d.onclick=function(){ if(!busy && i<=maxSeen) go(i); };
-    nodesEl.appendChild(d);
-  });
-  ST.forEach(function(){ var t=document.createElement('div'); t.className='seg'; track.appendChild(t); });
-  // speed lines
-  var sh='';
-  for(var i=0;i<16;i++) sh+='<i style="top:'+(6+Math.random()*88)+'%;width:'+(70+Math.random()*190)+'px;left:100%;animation-delay:'+(Math.random()*.55)+'s"></i>';
-  speed.innerHTML=sh;
-}
-
-function place(i,instant){
-  var x=nx(i);
-  if(instant){
-    world.style.transition='none'; pkt.style.transition='none';
-    /* слои параллакса тоже надо замораживать, иначе после ресайза они
-       ещё полторы секунды доезжают отдельно от трека */
-    plx1.style.transition='none'; plx2.style.transition='none';
-  }
-  world.style.transform='translateX('+(-(x-vw()/2))+'px)';
-  /* кубик — дочерний элемент #world, поэтому translateX(x) компенсирует сдвиг
-     трека и держит куб ровно по центру экрана в любой момент анимации */
-  pkt.style.transform='translateX('+x+'px)';
-  plx1.style.transform='translateX('+(-(x-vw()/2)*0.26)+'px)';
-  plx2.style.transform='translateX('+(-(x-vw()/2)*0.5)+'px)';
-  if(instant){
-    void world.offsetWidth;
-    world.style.transition=''; pkt.style.transition='';
-    plx1.style.transition=''; plx2.style.transition='';
-  }
-}
-
-function paint(){
-  [].forEach.call(nodesEl.children,function(n,i){
-    n.classList.toggle('on',i===cur);
-    n.classList.toggle('done',i<cur);
-  });
-  [].forEach.call(track.children,function(t,i){
-    t.classList.toggle('done',i<cur); t.classList.toggle('cur',i===cur);
-  });
-  [].forEach.call(wireG.querySelectorAll('.wseg'),function(p){
-    var i=+p.dataset.i, vis=i<cur;
-    p.style.opacity = vis ? '1' : '0';
-    p.classList.toggle('vis', vis);
-    p.classList.toggle('wdone', vis && !ST[i+1].lab);
-  });
-  stnameEl.textContent=ST[cur].tag;
-}
-
-function showPanel(){
-  var s=ST[cur];
-  document.getElementById('ptag').textContent=s.tag;
-  document.getElementById('ptitle').textContent=s.t;
-  document.getElementById('pbody').innerHTML=s.b;
-  document.getElementById('ptech').textContent=s.k;
-  pinner.classList.toggle('lab',!!s.lab);
-  var db=document.getElementById('dossBtn');
-  if(s.d){ db.style.display=''; db.textContent=s.btn||'ДОСЬЕ'; } else db.style.display='none';
-  document.getElementById('backBtn').style.display = cur>0?'':'none';
-  var nb=document.getElementById('nextBtn');
-  nb.style.display = cur<ST.length-1?'':'none';
-  panel.classList.add('on');
-  // scroll affordance
-  var pb=document.getElementById('pbody');
-  setTimeout(function(){
-    document.getElementById('pbodywrap')
-      .classList.toggle('scrollable', pb.scrollHeight > pb.clientHeight+4);
-  },40);
-  pb.onscroll=function(){
-    document.getElementById('pbodywrap')
-      .classList.toggle('scrollable', pb.scrollHeight - pb.scrollTop > pb.clientHeight+4);
-  };
-  pb.scrollTop=0;
-  // packet skin
-  pkt.className='on'+(s.skin?' '+s.skin:'');
-}
-
-function go(i){
-  /* ФИКС: свайп ловился на document ещё на стартовом экране — маршрут
-     уезжал вперёд, и после запуска панель показывала не ту станцию. */
-  if(!started||busy||i<0||i>=ST.length||i===cur) return;
-  var dir = i>cur;
-  busy=true; panel.classList.remove('on');
-  if(dir) speed.classList.add('on');
-  var dist=Math.abs(i-cur), dur=Math.min(1700,760+dist*380);
-  /* Трек и кубик двигаются на ОДНОЙ кривой и с ОДНОЙ задержкой — иначе они
-     расходятся по фазе на середине перелёта, и кубик визуально "улетает"
-     в сторону от центра (особенно заметно при движении назад). */
-  var EASE='cubic-bezier(.5,.02,.32,1)';
-  world.style.transition='transform '+dur+'ms '+EASE+' 90ms';
-  pkt.style.transition='transform '+dur+'ms '+EASE+' 90ms';
-  plx1.style.transition='transform '+dur+'ms '+EASE+' 90ms';
-  plx2.style.transition='transform '+dur+'ms '+EASE+' 90ms';
-  cur=i; if(cur>maxSeen) maxSeen=cur;
-  place(cur,false); paint();
-  setTimeout(function(){ speed.classList.remove('on'); busy=false; showPanel(); }, dur+150);
-}
-
-/* ============ INTRO / TRANSFORM ============ */
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-
-var launching=false;
-function startJourney(){
-  /* ФИКС: двойной клик по «Отправить» или удержание Enter запускали
-     цепочку таймеров дважды — сцена трансформации проигрывалась внахлёст. */
-  if(launching||started) return;
-  launching=true;
-  var sendBtn=document.getElementById('send'); if(sendBtn) sendBtn.disabled=true;
-  var v=document.getElementById('msg').value.trim();
-  USER_MSG = v || 'Привет, сервер!';
-  var intro=document.getElementById('intro'), xf=document.getElementById('xform'),
-      xj=document.getElementById('xjson'), cap=document.getElementById('xcap');
-  intro.classList.add('gone');
-  setTimeout(function(){
-    intro.style.display='none'; xf.classList.add('on');
-    var lines=[
-      '<span class="p">{</span>',
-      '  <span class="k">"message"</span>: <span class="s">"'+esc(USER_MSG)+'"</span>,',
-      '  <span class="k">"user"</span>: <span class="s">"student@dstu"</span>,',
-      '  <span class="k">"method"</span>: <span class="s">"POST"</span>,',
-      '  <span class="k">"ts"</span>: <span class="n">'+Date.now()+'</span>',
-      '<span class="p">}</span>'
-    ];
-    xj.innerHTML=lines.map(function(l,i){
-      return '<div style="animation-delay:'+(i*0.11)+'s">'+l+'</div>';
-    }).join('');
-    cap.textContent='СЕРИАЛИЗАЦИЯ · ТЕКСТ → JSON';
-    setTimeout(function(){cap.classList.add('on');},300);
-    setTimeout(function(){
-      cap.textContent='УПАКОВКА В БАЙТЫ';
-      xj.classList.add('crush');
-      document.getElementById('xflash').classList.add('go');
-    },1750);
-    setTimeout(function(){
-      xf.classList.remove('on'); cap.classList.remove('on');
-      // face 1 of the cube carries the user's message
-      document.getElementById('cube').children[0].textContent=
-        USER_MSG.length>13?USER_MSG.slice(0,12)+'…':USER_MSG;
-      pkt.classList.add('on');
-      cur=0; maxSeen=0; started=true; launching=false;
-      place(0,true); paint(); showPanel();
-    },2600);
-  },820);
-}
-
-/* ============ FULLSCREEN ============ */
-function fsNotice(txt){
-  ['fsBtn','fsBtn2'].forEach(function(id){
-    var b=document.getElementById(id); if(!b) return;
-    if(b.dataset.orig===undefined) b.dataset.orig=b.textContent;
-    b.textContent=txt;
-    setTimeout(function(){ b.textContent=b.dataset.orig; },2600);
-  });
-}
-function toggleFS(){
-  var el=document.documentElement;
-  try{
-    if(!document.fullscreenElement && !document.webkitFullscreenElement){
-      var req = el.requestFullscreen || el.webkitRequestFullscreen;
-      if(!req){ fsNotice('НЕ ПОДДЕРЖИВАЕТСЯ — ИГРАЙ ТАК'); return; }
-      var p = req.call(el);
-      if(p && p.then) p.then(lockLand).catch(function(){ fsNotice('ЗАБЛОКИРОВАНО — ИГРАЙ ТАК'); });
-      else setTimeout(lockLand,300);
-    } else {
-      (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);
-    }
-  }catch(e){ fsNotice('НЕ ПОДДЕРЖИВАЕТСЯ — ИГРАЙ ТАК'); }
-}
-function lockLand(){
-  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('landscape').catch(function(){}); }catch(e){}
-}
-var skipOrientCheck=false;
-function skipRotate(){
-  skipOrientCheck=true;
-  var r=document.getElementById('rotate');
-  if(r) r.classList.remove('show');
-}
-function checkOrient(){
-  var r=document.getElementById('rotate');
-  if(!r) return;
-  if(skipOrientCheck){ r.classList.remove('show'); return; }
-  var portrait = window.innerHeight > window.innerWidth;
-  var smallish = Math.min(window.innerWidth,window.innerHeight) < 560;
-  r.classList.toggle('show', portrait && smallish);
-}
-
-/* ============ MODALS ============ */
-var modal=document.getElementById('modal'), mbody=document.getElementById('mbody'),
-    mtitle=document.getElementById('mtitle'), mtag=document.getElementById('mtag');
-function openModal(kind){
-  var D=DOSSIER[kind]; if(!D) return;
-  mtag.textContent=D.tag; mtitle.textContent=D.title;
-  mbody.innerHTML=D.html();
-  modal.classList.add('on');
-  if(D.init) D.init();
-}
-function closeModal(){
-  modal.classList.remove('on');
-  /* освобождаем DOM досье: терминал и 7 билетов с 3D-трансформами
-     держатся в памяти без нужды, а при повторном открытии всё равно
-     собираются заново */
-  mbody.innerHTML='';
-}
-
-/* ============================================================
-   DOSSIER CONTENT
-   ============================================================ */
-var DOSSIER={};
-
-DOSSIER.cs={tag:'ДОСЬЕ',title:'Клиент, сервер и контракт между ними',html:function(){return ''+
-'<div class="dgrid">'+
-'<div class="dcard" style="--c:#1fe0ff"><h4>Клиент</h4><p>Инициирует запрос и отвечает за представление данных. Браузер, мобильное приложение, Postman — или другой сервер.</p><p>Диалог всегда начинает он.</p></div>'+
-'<div class="dcard" style="--c:#a06bff"><h4>Сервер</h4><p>Хранит данные и бизнес-логику. Ждёт запросы, обрабатывает, отвечает. Сам первым не пишет.</p><p>Один сервер обслуживает тысячи клиентов одновременно.</p></div>'+
-'<div class="dcard" style="--c:#00ff9d"><h4>API как контракт</h4><p>Клиенту нельзя в базу напрямую: это небезопасно и невозможно поддерживать. Сервер публикует набор точек входа с правилами обращения.</p><p><b>Пока контракт соблюдается, внутренности сервера можно переписать полностью</b> — клиент не заметит.</p></div>'+
-'</div>';}};
-
-DOSSIER.json={tag:'ДОСЬЕ',title:'JSON и XML — языки, на которых говорят машины',html:function(){return ''+
-'<div class="dgrid">'+
-'<div class="dcard" style="--c:#00ff9d"><h4>JSON</h4><p>JavaScript Object Notation. Пары «ключ — значение», вложенные объекты и массивы. Компактный, читается человеком, парсится нативно почти везде. Стандарт де-факто для REST API.</p>'+
-'<pre class="code">{\n  <span style="color:#1fe0ff">"username"</span>: <span style="color:#00ff9d">"test_user"</span>,\n  <span style="color:#1fe0ff">"age"</span>: <span style="color:#ffb52e">19</span>,\n  <span style="color:#1fe0ff">"active"</span>: <span style="color:#ff2d78">true</span>\n}</pre></div>'+
-'<div class="dcard" style="--c:#a06bff"><h4>XML</h4><p>eXtensible Markup Language. Данные в виде дерева тегов. Многословнее, зато поддерживает схемы XSD, namespace и строгую валидацию структуры. Обязателен в SOAP.</p>'+
-'<pre class="code">&lt;<span style="color:#a06bff">user</span>&gt;\n  &lt;<span style="color:#a06bff">username</span>&gt;test_user&lt;/<span style="color:#a06bff">username</span>&gt;\n  &lt;<span style="color:#a06bff">age</span>&gt;19&lt;/<span style="color:#a06bff">age</span>&gt;\n&lt;/<span style="color:#a06bff">user</span>&gt;</pre></div>'+
-'</div>'+
-'<div class="dcard" style="margin-top:11px;--c:#ffb52e"><h4>Почему это важно на практике</h4><p>Тот же объект в XML занимает примерно <b>вдвое больше байт</b>. На миллионах запросов в сутки это реальные деньги за трафик — одна из причин, почему REST + JSON вытеснили SOAP + XML в публичных API.</p><p>В Postman вкладка <b>Pretty</b> форматирует JSON-ответ, <b>Raw</b> показывает как есть, <b>Preview</b> рендерит как в браузере.</p></div>';}};
-
-DOSSIER.http={tag:'ДОСЬЕ',title:'HTTP-методы, REST и SOAP',html:function(){return ''+
-'<div class="dgrid">'+
-'<div class="dcard" style="--c:#00ff9d"><h4>GET</h4><p>Получить данные. Параметры едут в URL после «?». Ничего не меняет.</p><p style="color:#4a5875;font-size:11px">Безопасный · идемпотентный</p></div>'+
-'<div class="dcard" style="--c:#ffb52e"><h4>POST</h4><p>Создать новое. Данные в теле запроса, а не в ссылке — поэтому подходит для паролей и файлов.</p><p style="color:#4a5875;font-size:11px">Изменяет · НЕ идемпотентный</p></div>'+
-'<div class="dcard" style="--c:#1fe0ff"><h4>PUT</h4><p>Обновить целиком. Повтори сто раз — результат тот же.</p><p style="color:#4a5875;font-size:11px">Изменяет · идемпотентный</p></div>'+
-'<div class="dcard" style="--c:#ff4455"><h4>DELETE</h4><p>Удалить ресурс. Повторный вызов ничего не находит, но и не ломает.</p><p style="color:#4a5875;font-size:11px">Изменяет · идемпотентный</p></div>'+
-'</div>'+
-'<div class="dcard" style="margin-top:11px;--c:#ffb52e"><h4>Зачем знать про идемпотентность</h4><p>Это свойство «повторный вызов не навредит». Не академическая придирка: на нём держатся <b>автоматические повторы запросов при обрыве связи</b>. GET и PUT повторять безопасно, POST — нет, иначе вместо одного заказа появится три.</p></div>'+
-'<div class="dgrid" style="margin-top:11px">'+
-'<div class="dcard" style="--c:#1fe0ff"><h4>REST</h4><ul><li>Архитектурный стиль, а не протокол</li><li>Только HTTP/HTTPS</li><li>Обычно JSON</li><li>Стандартные методы GET/POST/PUT/DELETE</li><li>Stateless — сервер не помнит клиента</li><li>Лёгкий, быстрый, кэшируется</li></ul><div class="dfoot">Веб, мобильные приложения, публичные API, микросервисы</div></div>'+
-'<div class="dcard" style="--c:#a06bff"><h4>SOAP</h4><ul><li>Строгий протокол со спецификацией W3C</li><li>HTTP, а также SMTP, TCP, JMS</li><li>Только XML в конверте Envelope</li><li>Операции описаны в WSDL-контракте</li><li>Умеет stateful</li><li>WS-Security, транзакции, валидация</li></ul><div class="dfoot">Банки, платёжные шлюзы, страхование, госсистемы</div></div>'+
-'</div>'+
-'<div class="dcard" style="margin-top:11px;--c:#00ff9d"><h4>Короткий ответ для защиты</h4><p>SOAP тяжелее, но даёт гарантии и строгий контракт — поэтому выжил там, где ошибка стоит денег. REST легче и гибче — поэтому на нём построен почти весь современный веб. Это <b>не «устаревшее против нового»</b>, а разные инструменты под разную цену ошибки.</p></div>';}};
-
-DOSSIER.auth={tag:'ДОСЬЕ',title:'Аутентификация и авторизация',html:function(){return ''+
-'<div class="dcard" style="--c:#1fe0ff;margin-bottom:11px"><h4>Два слова, которые постоянно путают</h4><p><b style="color:#1fe0ff">Аутентификация</b> отвечает на вопрос «кто ты?» — проверка личности. <b style="color:#ff2d78">Авторизация</b> отвечает «что тебе можно?» — проверка прав.</p><p>Пропуск на проходной — аутентификация. Список этажей, куда он открывает дверь, — авторизация.</p></div>'+
-'<div class="dgrid">'+
-'<div class="dcard" style="--c:#ffb52e"><h4>Basic Auth</h4><p>Логин и пароль через двоеточие, закодированные в Base64, в заголовке Authorization. Это задание №5 практической.</p><div class="dfoot"><b>Осторожно:</b> Base64 — кодирование, а не шифрование. Разворачивается одной командой. Только поверх HTTPS.</div></div>'+
-'<div class="dcard" style="--c:#00ff9d"><h4>API Key</h4><p>Строка-идентификатор приложения в заголовке или параметре. Отвечает «какое приложение стучится», но не «какой пользователь».</p><div class="dfoot">Хороша для квот и тарификации. Утёкший ключ работает вечно, пока его не отзовут.</div></div>'+
-'<div class="dcard" style="--c:#a06bff"><h4>OAuth 2.0 + OIDC</h4><p>Делегированный доступ: приложение получает доступ к твоим данным, не получая пароль. Это кнопка «Войти через Google».</p><div class="dfoot">OAuth решает авторизацию, OpenID Connect добавляет сверху аутентификацию.</div></div>'+
-'<div class="dcard" style="--c:#ff4455"><h4>mTLS</h4><p>Взаимный TLS: сертификат предъявляют <b>обе</b> стороны. Не только клиент проверяет сервер, но и сервер клиента.</p><div class="dfoot">Золотой стандарт для связи сервис-сервис и банковских интеграций. Дорог из-за ротации сертификатов.</div></div>'+
-'</div>'+
-'<div class="dcard" style="margin-top:11px;--c:#1fe0ff"><h4>Анатомия JWT</h4>'+
-'<div class="jwtline"><span class="a">eyJhbGciOiJIUzI1NiJ9</span><span class="d">.</span><span class="b">eyJzdWIiOiIxMjMiLCJyb2xlIjoiYWRtaW4ifQ</span><span class="d">.</span><span class="c">SflKxwRJSMeKKF2QT4fwpM</span></div>'+
-'<div class="dgrid">'+
-'<div class="dcard" style="--c:#ff2d78"><h4 style="font-size:12px">HEADER</h4><p style="font-size:11.5px">Алгоритм подписи и тип токена. Например HS256 или RS256.</p></div>'+
-'<div class="dcard" style="--c:#a06bff"><h4 style="font-size:12px">PAYLOAD</h4><p style="font-size:11.5px">Кто пользователь, какая роль, когда истекает. Закодировано, но <b style="color:#ffb52e">не зашифровано</b> — секреты сюда класть нельзя.</p></div>'+
-'<div class="dcard" style="--c:#1fe0ff"><h4 style="font-size:12px">SIGNATURE</h4><p style="font-size:11.5px">Подпись первых двух частей. Поменял payload — подпись не сходится, шлюз отклоняет токен.</p></div>'+
-'</div>'+
-'<div class="dfoot" style="margin-top:9px">Главный трюк: токен <b>самодостаточен</b>. Шлюз проверяет подпись локально, не ходя в базу за сессией. Именно поэтому JWT масштабируется.</div></div>';}};
-
-DOSSIER.owasp={tag:'ДОСЬЕ',title:'OWASP API Security Top 10 — 2023',html:function(){
-var R=[['API1','Broken Object Level Authorization (BOLA)','Подменил чужой ID в запросе — получил чужие данные. Самая частая и самая простая в эксплуатации дыра.',1],
-['API2','Broken Authentication','Слабый вход: угоняемые токены, нет защиты от перебора, вечные сессии.',1],
-['API3','Broken Object Property Level Authorization','API отдаёт лишние поля объекта или позволяет записать те, что менять нельзя.',1],
-['API4','Unrestricted Resource Consumption','Нет лимитов — отказ в обслуживании или счёт за облако на миллион.',0],
-['API5','Broken Function Level Authorization','Обычный пользователь дотягивается до админских функций из-за путаницы в ролях.',1],
-['API6','Unrestricted Access to Sensitive Business Flows','Бизнес-сценарий автоматизируют ботами во вред бизнесу. Багов в коде при этом нет.',0],
-['API7','Server Side Request Forgery','API ходит по URL от пользователя — и его заставляют стучаться во внутреннюю сеть.',0],
-['API8','Security Misconfiguration','Забытые дефолты, открытый CORS, стектрейсы в ответах.',0],
-['API9','Improper Inventory Management','Никто не помнит, что версия v1 жива на отдельном хосте. Она и становится входом.',0],
-['API10','Unsafe Consumption of APIs','Своим данным не доверяем, а ответу стороннего API — почему-то да.',0]];
-return '<div class="dcard" style="--c:#ffb52e;margin-bottom:11px"><h4>Три риска из первой пятёрки — про авторизацию</h4><p>По данным OWASP это главная боль современных API. Отмечены жёлтой полосой.</p></div>'+
-R.map(function(r){return '<div class="drow'+(r[3]?' au':'')+'"><span class="did">'+r[0]+'</span><span><b>'+r[1]+'</b><span>'+r[2]+'</span></span></div>';}).join('')+
-'<div class="dcard" style="margin-top:11px;--c:#ff4455"><h4>Что закрывает шлюз, а что нет</h4><p>Шлюз хорошо решает <b>API4</b> (лимиты), <b>API8</b> (единая конфигурация), <b>API9</b> (инвентаризация) и частично <b>API2</b> (проверка токенов).</p><p><b style="color:#ffb52e">Но BOLA он не закроет никогда</b> — шлюз не знает, какой объект чей. Проверку «этот пользователь имеет право на этот конкретный заказ» обязан делать сам сервис. Gateway — не серебряная пуля, а первый рубеж.</p></div>';}};
-
-DOSSIER.giants={tag:'ДОСЬЕ',title:'Как это решают крупные компании',html:function(){return ''+
-'<div class="dgrid">'+
-'<div class="dcard" style="--c:#ff4455"><h4>Netflix Zuul</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">OPEN SOURCE · JAVA + NETTY</p><ul><li>Парадная дверь для всего трафика с телевизоров, телефонов и браузеров к бэкенду Netflix</li><li>Zuul 1 — модель «поток на запрос», фильтры PRE / ROUTE / POST / ERROR</li><li>Zuul 2 переписан на Netty с event loop на ядро: фильтры Inbound / Endpoint / Outbound</li><li>Железное правило разработчика фильтра — <b>никогда не блокировать event loop</b></li><li>Динамическая маршрутизация, сброс нагрузки, стресс-тесты на живом трафике</li></ul><div class="dfoot">Apache 2.0, репозиторий с марта 2013. Версия <b>4.1.4</b> — 10 сентября 2026.</div></div>'+
-'<div class="dcard" style="--c:#ffb52e"><h4>Amazon API Gateway</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">MANAGED · AWS</p><ul><li>Полностью управляемый: своей инфраструктуры не нужно</li><li>Три типа API: REST, HTTP (дешевле), WebSocket</li><li>Авторизация через IAM, Cognito, OAuth2/OIDC или Lambda authorizer</li><li>Троттлинг, usage plans с API-ключами, кэш, интеграция с WAF</li><li>Стандартный фасад для serverless: маршрут → Lambda</li></ul><div class="dfoot">SLA <b>99.95%</b>. Сентябрь 2026, US East: HTTP API <b>$1.00</b>/млн, REST API <b>$3.50</b>/млн. Лимит ответа 29 МБ.</div></div>'+
-'<div class="dcard" style="--c:#00ff9d"><h4>Kong</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">OPEN SOURCE · OPENRESTY</p><ul><li>Самый распространённый самоуправляемый шлюз</li><li>Более <b>150 плагинов</b>: JWT, OAuth 2.0, OIDC, LDAP, API-key, mTLS</li><li>Rate limiting в трёх режимах: local, cluster, redis</li><li>Конфигурация в PostgreSQL или полностью DB-less</li><li>Родная интеграция с Kubernetes через Ingress Controller</li></ul><div class="dfoot">Apache 2.0. Плагины на Lua и Go. Выбор при мультиоблаке и больших объёмах.</div></div>'+
-'<div class="dcard" style="--c:#1fe0ff"><h4>Google Apigee</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">MANAGED · ENTERPRISE</p><ul><li>Не просто шлюз, а платформа управления жизненным циклом API</li><li>Портал разработчика, регистрация приложений, версионирование, монетизация</li><li>Политики на XML: трансформация, аутентификация, квоты</li><li>Сильная сторона — аналитика трафика и федеративное управление</li><li>Apigee X (SaaS), hybrid, Edge (legacy)</li></ul><div class="dfoot">От <b>$2 500 в месяц</b>, крупные внедрения от $100k в год. Не инструмент для небольшой команды.</div></div>'+
-'<div class="dcard" style="--c:#a06bff"><h4>Envoy</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">OPEN SOURCE · C++ L7 PROXY</p><ul><li>Высокопроизводительный прокси уровня L7</li><li>Динамическая конфигурация через xDS — маршруты меняются без перезапуска</li><li>Лежит в основе Istio, Consul Connect и AWS App Mesh</li><li>Максимальная гибкость ценой сложности: нужен отдельный control plane</li></ul><div class="dfoot">Выбор компаний с собственной платформенной командой.</div></div>'+
-'<div class="dcard" style="--c:#ff2d78"><h4>Gateway ≠ Service Mesh</h4><p style="font-size:11px;color:#4a5875;font-family:var(--mono)">ВАЖНОЕ РАЗЛИЧИЕ ДЛЯ ЗАЩИТЫ</p><ul><li><b>API Gateway</b> — граница «север — юг»: между внешними клиентами и системой</li><li><b>Service Mesh</b> — «запад — восток»: между сервисами внутри периметра</li><li>Не конкуренты: крупные системы используют оба слоя сразу</li><li>Reverse proxy маршрутизирует; шлюз добавляет авторизацию, лимиты, валидацию схем, портал</li></ul><div class="dfoot">Главный риск шлюза — <b>централизация</b>: он снимает дублирование со всех сервисов, но его отказ становится отказом всей системы.</div></div>'+
-'</div>';}};
-
-DOSSIER.server={tag:'ДОСЬЕ',title:'Обработка HTTP-запроса на сервере',html:function(){
-var S=[['1','Приём соединения','Веб-сервер принимает TCP-соединение и расшифровывает TLS.'],
-['2','Парсинг','Разбирает HTTP-запрос: метод, путь, заголовки, тело.'],
-['3','Маршрутизация','Определяет, какой обработчик отвечает за эту пару «метод + путь».'],
-['4','Middleware','Цепочка промежуточных слоёв: аутентификация, проверка прав, валидация входных данных, логирование.'],
-['5','Бизнес-логика','Выполняется сам обработчик, при необходимости с запросами к базе данных.'],
-['6','Сериализация ответа','Результат превращается в JSON или XML, добавляется статус-код и заголовки.'],
-['7','Отправка','Ответ уходит клиенту, соединение закрывается или переиспользуется.']];
-return S.map(function(s){return '<div class="drow"><span class="did" style="color:#1fe0ff">'+s[0]+'</span><span><b>'+s[1]+'</b><span>'+s[2]+'</span></span></div>';}).join('')+
-'<div class="dcard" style="margin-top:11px;--c:#a06bff"><h4>Где здесь шлюз</h4><p>В крупных системах шаги <b>1, 3 и 4</b> частично выносят на API Gateway — отдельный слой перед сервисами, чтобы не дублировать эту логику в каждом из сотни микросервисов.</p></div>';}};
-
-/* ---------- POSTMAN ---------- */
-var PM_HDRS={"host":"postman-echo.com","accept":"*/*","accept-encoding":"gzip, deflate, br","user-agent":"PostmanRuntime/7.39.0"};
-function mix(o){var r={},k;for(k in PM_HDRS)r[k]=PM_HDRS[k];for(k in o)r[k]=o[k];return r;}
-var PMT=[
-{n:'1 · GET + params',m:'GET',u:'https://postman-echo.com/get?name=Ivan&age=19',sec:'PARAMS',
- req:[['name','Ivan'],['age','19']],
- h:'Параметры GET-запроса едут прямо в URL после «?» и разделяются «&». Postman собирает эту строку за тебя из вкладки Params. Сервер возвращает их в поле args — так видно, что именно до него долетело.',
- r:{args:{age:"19",name:"Ivan"},headers:PM_HDRS,url:"https://postman-echo.com/get?name=Ivan&age=19"}},
-{n:'2 · POST JSON',m:'POST',u:'https://postman-echo.com/post',sec:'BODY · RAW · JSON',
- body:'{\n  "username": "test_user",\n  "password": "12345"\n}',
- h:'Данные едут в теле запроса, а не в адресе. Именно поэтому POST используют для паролей: тело не попадает в историю браузера и в логи прокси. Сервер разобрал JSON и вернул его в поле json.',
- r:{args:{},data:{username:"test_user",password:"12345"},files:{},form:{},
-    headers:mix({"content-type":"application/json","content-length":"52"}),
-    json:{username:"test_user",password:"12345"},url:"https://postman-echo.com/post"}},
-{n:'3 · Params в URL',m:'GET',u:'https://postman-echo.com/get?city=London&country=UK',sec:'PARAMS',
- req:[['city','London'],['country','UK']],
- h:'То же, что задание 1, но с другими параметрами. Если снять галочку с параметра во вкладке Params, Postman исключит его из запроса — удобно, чтобы не удалять строку целиком.',
- r:{args:{city:"London",country:"UK"},headers:PM_HDRS,url:"https://postman-echo.com/get?city=London&country=UK"}},
-{n:'4 · Headers',m:'GET',u:'https://postman-echo.com/headers',sec:'HEADERS',
- req:[['User-Agent','PostmanTest'],['Custom-Header','HelloWorld']],
- h:'Заголовки — метаданные запроса: формат данных, язык, версия API, токены авторизации. Эндпоинт /headers возвращает всё, что получил — видно, что сервер принял оба заголовка.',
- r:{headers:{host:"postman-echo.com","user-agent":"PostmanTest","custom-header":"HelloWorld",accept:"*/*","accept-encoding":"gzip, deflate, br"}}},
-{n:'5 · Basic Auth',m:'GET',u:'https://postman-echo.com/basic-auth',sec:'AUTHORIZATION · BASIC',
- req:[['Username','postman'],['Password','password'],['→ Заголовок','Authorization: Basic cG9zdG1hbjpwYXNzd29yZA==']],
- h:'Postman склеил «postman:password», закодировал в Base64 и положил в заголовок Authorization. Это кодирование, а не шифрование — строка разворачивается обратно одной командой. Поэтому Basic Auth допустим только поверх HTTPS.',
- r:{authenticated:true}},
-{n:'6 · PUT',m:'PUT',u:'https://postman-echo.com/put',sec:'BODY · RAW · JSON',
- body:'{\n  "id": 1,\n  "status": "updated"\n}',
- h:'PUT обновляет ресурс целиком и идемпотентен: отправь десять раз — состояние сервера будет как после первого. Поэтому PUT безопасно повторять при обрыве связи.',
- r:{args:{},data:{id:1,status:"updated"},files:{},form:{},
-    headers:mix({"content-type":"application/json","content-length":"38"}),
-    json:{id:1,status:"updated"},url:"https://postman-echo.com/put"}},
-{n:'7 · DELETE',m:'DELETE',u:'https://postman-echo.com/delete',sec:'BODY · RAW · JSON',
- body:'{\n  "id": 123\n}',
- h:'DELETE удаляет ресурс и тоже идемпотентен: повторный вызов вернёт «уже нет такого», но ничего не сломает. Тестовый сервер postman-echo ничего реально не удаляет — он отражает полученное.',
- r:{args:{},data:{id:123},files:{},form:{},
-    headers:mix({"content-type":"application/json","content-length":"16"}),
-    json:{id:123},url:"https://postman-echo.com/delete"}},
-{n:'8 · Файл form-data',m:'POST',u:'https://postman-echo.com/post',sec:'BODY · FORM-DATA',
- req:[['file','report.pdf (File)'],['Content-Type','multipart/form-data']],
- h:'Чтобы отправить файл, во вкладке Body выбирают form-data и меняют тип параметра с Text на File. Загруженный файл сервер возвращает в секции files. Схема работает с любыми типами файлов.',
- r:{args:{},data:{},files:{"report.pdf":"data:application/pdf;base64,JVBERi0xLjQKJ..."},form:{},
-    headers:mix({"content-type":"multipart/form-data; boundary=------7356"}),url:"https://postman-echo.com/post"}},
-{n:'9 · Коллекция',m:'GET',u:'{{baseUrl}}/get · Collection: Test API',sec:'COLLECTION',
- req:[['Коллекция','Test API'],['Запросов внутри','4'],['Путь','New → Collection → Save']],
- h:'Коллекция — папка сохранённых запросов. Вместо того чтобы каждый раз набирать URL заново, открываешь сохранённый запрос и жмёшь Send. Коллекцию можно экспортировать целиком и передать другому разработчику.',
- r:{collection:"Test API",saved_requests:["GET /get","POST /post","PUT /put","DELETE /delete"],status:"ready"}},
-{n:'10 · Окружение',m:'GET',u:'{{baseUrl}}/get',sec:'ENVIRONMENT',
- req:[['Окружение','Test Environment'],['baseUrl','https://postman-echo.com'],['Итоговый URL','https://postman-echo.com/get']],
- h:'Переменная {{baseUrl}} подставляется из окружения. Смысл: переключил окружение с Test на Production — и все запросы коллекции пошли на боевой сервер. Ни один URL править вручную не нужно.',
- r:{args:{},headers:PM_HDRS,url:"https://postman-echo.com/get",_resolved:{"{{baseUrl}}":"https://postman-echo.com"}}}
-];
-var MCOL={GET:'#00ff9d',POST:'#ffb52e',PUT:'#1fe0ff',DELETE:'#ff4455'};
-function jhl(o){
-  var s=JSON.stringify(o,null,2).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  s=s.replace(/"([^"]+)":/g,'"<span class="jk">$1</span>":');
-  s=s.replace(/: "([^"]*)"/g,': "<span class="jv">$1</span>"');
-  s=s.replace(/: (\d+)(,?)$/gm,': <span class="jn">$1</span>$2');
-  s=s.replace(/: (true|false)/g,': <span class="jb">$1</span>');
-  return s;
-}
-DOSSIER.postman={tag:'ЛАБОРАТОРИЯ',title:'Терминал Postman — 10 заданий',
-html:function(){return ''+
-'<div class="pmtasks" id="pmt"></div>'+
-'<div class="pmwrap">'+
- '<div class="pmcol"><div class="pmurl"><div class="pmm" id="pmm">GET</div>'+
- '<div class="pmu" id="pmu"></div><button class="pmsend" id="pms">Send</button></div>'+
- '<div class="pmsec"><div class="lbl" id="pmsecl">PARAMS</div><div id="pmreq"></div></div></div>'+
- '<div class="pmcol"><div class="pmsec"><div class="pmstat" id="pmstat">'+
- '<span style="color:#4a5875">// нажми Send</span></div>'+
- '<div class="pmout" id="pmout"></div></div></div>'+
-'</div>'+
-'<div class="pmhint" id="pmh"></div>';},
-init:function(){
-  var t=document.getElementById('pmt'),cur=0;
-  function load(i){
-    cur=i; var x=PMT[i];
-    [].forEach.call(t.children,function(b,j){b.classList.toggle('on',j===i);});
-    var m=document.getElementById('pmm');
-    m.textContent=x.m; m.style.color=MCOL[x.m];
-    m.style.borderColor=MCOL[x.m]+'55'; m.style.background=MCOL[x.m]+'12';
-    document.getElementById('pmu').textContent=x.u;
-    document.getElementById('pmsecl').textContent=x.sec;
-    document.getElementById('pmreq').innerHTML = x.body
-      ? '<pre>'+x.body.replace(/</g,'&lt;')+'</pre>'
-      : x.req.map(function(r){return '<div class="kv"><b>'+r[0]+'</b><span>'+r[1]+'</span></div>';}).join('');
-    document.getElementById('pmstat').innerHTML='<span style="color:#4a5875">// нажми Send</span>';
-    document.getElementById('pmout').innerHTML='';
-    document.getElementById('pmh').innerHTML='<b>ЧТО ЗДЕСЬ ПРОИСХОДИТ</b>'+x.h;
-  }
-  PMT.forEach(function(x,i){
-    var b=document.createElement('button'); b.type='button'; b.textContent=x.n;
-    b.onclick=function(){load(i);}; t.appendChild(b);
-  });
-  document.getElementById('pms').onclick=function(){
-    var btn=this,x=PMT[cur]; btn.disabled=true;
-    var out=document.getElementById('pmout'), stat=document.getElementById('pmstat');
-    out.innerHTML='<span style="color:#4a5875">// отправка...</span>';
-    stat.innerHTML='';
-    var ms=320+Math.random()*280;
-    setTimeout(function(){
-      /* окно могли закрыть до «ответа» — тогда узлы уже отсоединены */
-      if(!btn.isConnected||!out.isConnected) return;
-      stat.innerHTML=
-        '<span>Status: <b>200 OK</b></span><span>Time: <i>'+Math.round(ms)+' ms</i></span>'+
-        '<span>Size: <i>'+(JSON.stringify(x.r).length/1024).toFixed(2)+' KB</i></span>'+
-        '<span><i>Pretty</i> · Raw · Preview</span>';
-      out.innerHTML=jhl(x.r);
-      btn.disabled=false;
-    },ms);
-  };
-  load(0);
-}};
-
-/* ---------- EXAM ---------- */
-var QS=[
-['Что такое клиент-серверная архитектура и как она связана с API?',
- ['Модель, где система разделена на две роли. <b>Клиент</b> (браузер, мобильное приложение, Postman) инициирует запрос и отвечает за представление данных. <b>Сервер</b> хранит данные и бизнес-логику, ждёт запросы, обрабатывает и возвращает ответ. Сервер сам диалог не начинает.',
-  'Связь с API прямая: клиенту запрещено обращаться к базе данных напрямую. Сервер публикует <b>API</b> — строго описанный набор точек входа. API это контракт: пока он соблюдается, внутреннюю реализацию сервера можно переписать полностью, и клиент не заметит.']],
-['В чём разница между REST и SOAP API?',
- ['<b>REST</b> — архитектурный стиль, а не протокол. Работает поверх HTTP, использует его стандартные методы, обменивается обычно JSON, всегда stateless. Лёгкий, быстрый, кэшируется.',
-  '<b>SOAP</b> — строгий протокол со спецификацией W3C. Только XML в конверте Envelope, операции описаны в WSDL, может работать поверх SMTP или TCP. Тяжелее, зато даёт WS-Security, транзакции и жёсткую валидацию.',
-  'Вывод: REST — для веба, мобильных и публичных API. SOAP остался там, где цена ошибки высока: банки, платёжные системы, страхование, госсервисы.']],
-['Какое значение имеет метод HTTP в запросах к API? Приведите примеры методов.',
- ['Метод — это <b>глагол запроса</b>. URL говорит, с каким ресурсом работаем, метод — что именно с ним делать. Один адрес ведёт себя по-разному в зависимости от метода.',
-  '<b>GET</b> — получить, параметры в URL, ничего не меняет. <b>POST</b> — создать, данные в теле. <b>PUT</b> — обновить целиком. <b>DELETE</b> — удалить. Также PATCH, HEAD, OPTIONS.',
-  'Важное свойство — <b>идемпотентность</b>: повторный вызов не меняет результат. GET, PUT, DELETE идемпотентны, POST — нет. На этом построены автоматические повторы при обрыве связи.']],
-['Как клиент взаимодействует с сервером через API? Приведите пример запроса.',
- ['Клиент формирует HTTP-запрос из четырёх частей: <b>метод</b>, <b>URL</b>, <b>заголовки</b> и опционально <b>тело</b>. Запрос уходит на сервер, сервер обрабатывает и возвращает ответ со статус-кодом и данными.',
-  'Пример из задания №2 практической:',
-  '<code>POST https://postman-echo.com/post</code><br><code>Content-Type: application/json</code><br><code>{ "username": "test_user", "password": "12345" }</code>',
-  'Сервер отвечает <b>200 OK</b> и возвращает JSON, где в поле <code>json</code> лежат отправленные данные, а в <code>headers</code> — полученные заголовки.']],
-['Что такое JSON и XML, и как они используются при работе с API?',
- ['Оба — текстовые форматы сериализации. Нужны, чтобы клиент и сервер на разных языках поняли друг друга.',
-  '<b>JSON</b> — пары «ключ — значение», вложенные объекты и массивы. Компактный, читаемый, нативно парсится почти везде. Стандарт де-факто для REST.',
-  '<b>XML</b> — дерево тегов. Многословнее, но поддерживает схемы XSD, namespace и строгую валидацию. Обязателен в SOAP.',
-  'На практике тот же объект в XML занимает вдвое больше байт. В Postman <b>Pretty</b> форматирует ответ, <b>Raw</b> показывает как есть, <b>Preview</b> рендерит как в браузере.']],
-['Как происходит обработка HTTP-запросов на стороне сервера?',
- ['<b>1.</b> Веб-сервер принимает TCP-соединение и расшифровывает TLS. <b>2.</b> Парсит запрос: метод, путь, заголовки, тело. <b>3.</b> Маршрутизация — какой обработчик отвечает за эту пару «метод + путь».',
-  '<b>4.</b> Цепочка middleware: аутентификация, проверка прав, валидация, логирование. <b>5.</b> Бизнес-логика обработчика, при необходимости с запросами к базе.',
-  '<b>6.</b> Результат сериализуется в JSON или XML, добавляется статус-код (200, 201, 400, 401, 404, 500) и заголовки. <b>7.</b> Ответ уходит клиенту.',
-  'В крупных системах шаги 1, 3 и 4 частично выносят на <b>API Gateway</b>, чтобы не дублировать логику в каждом сервисе.']],
-['Какие существуют способы аутентификации и авторизации при работе с API?',
- ['Сначала различим: <b>аутентификация</b> — проверка личности («кто ты?»), <b>авторизация</b> — проверка прав («что тебе можно?»).',
-  '<b>Basic Auth</b> — логин и пароль через двоеточие в Base64 в заголовке Authorization (задание №5). Base64 — кодирование, не шифрование, поэтому только поверх HTTPS.',
-  '<b>API Key</b> — строка-идентификатор приложения. Удобна для квот, но не говорит, какой пользователь пришёл.',
-  '<b>Bearer-токены и JWT</b> — самый частый вариант в REST. Три части: header, payload, signature. Самодостаточен: сервер проверяет подпись локально, без базы сессий.',
-  '<b>OAuth 2.0 и OpenID Connect</b> — делегированный доступ без передачи пароля. Кнопка «Войти через Google». OAuth — авторизация, OIDC добавляет аутентификацию.',
-  '<b>mTLS</b> — взаимный TLS, сертификат предъявляют обе стороны. Стандарт для связи сервис-сервис и банковских интеграций.']]
-];
-DOSSIER.exam={tag:'ЛАБОРАТОРИЯ',title:'Экзаменационные билеты — 7 вопросов',
-html:function(){
-  return '<div class="examtop"><span class="cnt">Открыто билетов: <b id="tcnt">0</b> / 7</span>'+
-    '<span style="font-family:var(--mono);font-size:10px;color:#4a5875">нажми на билет, чтобы перевернуть</span></div>'+
-    '<div class="tickets">'+QS.map(function(q,i){
-      return '<div class="ticket" data-i="'+i+'" tabindex="0" role="button" aria-label="Билет '+(i+1)+'"><div class="tin">'+
-        '<div class="tf tfront"><div class="tno">'+(i<9?'0':'')+(i+1)+'</div>'+
-        '<h4>'+q[0]+'</h4><div class="tap">ПЕРЕВЕРНУТЬ →</div></div>'+
-        '<div class="tf tback"><div class="tans">ОТВЕТ</div>'+
-        q[1].map(function(p){return '<p>'+p+'</p>';}).join('')+'</div></div></div>';
-    }).join('')+'</div>';},
-init:function(){
-  var seen={},c=document.getElementById('tcnt');
-  [].forEach.call(document.querySelectorAll('.ticket'),function(t){
-    var flip=function(){
-      t.classList.toggle('on');
-      if(t.classList.contains('on')){ seen[t.dataset.i]=1; c.textContent=Object.keys(seen).length; }
-    };
-    t.onclick=flip;
-    t.onkeydown=function(e){
-      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); flip(); }
-    };
-  });
-}};
-
-DOSSIER.credits={tag:'КОНЕЦ',title:'Титры',html:function(){return ''+
-'<div class="fin"><h2>Запрос вернулся домой</h2>'+
-'<p>Ты отправил сообщение «'+esc(USER_MSG)+'». Оно стало JSON-объектом, упаковалось в байты, оделось в TLS, доказало свою личность на воротах, уложилось в квоту, нашло нужный сервис, сходило в базу данных и вернулось статусом 200 OK.</p>'+
-'<p>Понимание этого пути и есть цель практической работы №3.</p>'+
-'<div class="srcs"><b>ИСТОЧНИКИ</b><ul>'+
-'<li>Практикум по выполнению практических работ по дисциплине «Формирование базы знаний на основе модели искусственного интеллекта». ДГТУ, кафедра «Информационные технологии». Сост. Е.Г. Зубарева. Практическая работа №3, с. 17–24</li>'+
-'<li><a href="https://owasp.org/API-Security/editions/2023/en/0x11-t10/" target="_blank" rel="noopener noreferrer">OWASP API Security Top 10 — 2023</a></li>'+
-'<li><a href="https://github.com/Netflix/zuul" target="_blank" rel="noopener noreferrer">Netflix Zuul</a> · <a href="https://docs.konghq.com/" target="_blank" rel="noopener noreferrer">Kong</a> · <a href="https://aws.amazon.com/api-gateway/" target="_blank" rel="noopener noreferrer">Amazon API Gateway</a> · <a href="https://cloud.google.com/apigee" target="_blank" rel="noopener noreferrer">Apigee</a> · <a href="https://www.envoyproxy.io/" target="_blank" rel="noopener noreferrer">Envoy</a></li>'+
-'<li><a href="https://learning.postman.com/docs/introduction/overview/" target="_blank" rel="noopener noreferrer">Postman Learning Center</a></li>'+
-'</ul>'+
-'<p style="margin-top:11px;font-size:11px;color:#4a5875;line-height:1.55">Станции «Личность», «Лимиты», «Маршрут» и досье по OWASP и решениям крупных компаний — <b>углубление темы сверх объёма методички</b>. Станции «Клиент», «JSON», «HTTP», «Бэкенд», терминал Postman и экзаменационные билеты воспроизводят материал практикума.</p>'+
-'</div></div>';}};
-
-/* ============================================================
-   WIRE-UP
-   ============================================================ */
-document.getElementById('send').onclick=startJourney;
-document.getElementById('msg').addEventListener('keydown',function(e){
-  /* isComposing: не перехватываем Enter, пока пользователь набирает текст
-     через IME (китайская/японская раскладка, голосовой ввод) */
-  if(e.key==='Enter'&&!e.isComposing&&!e.repeat) startJourney();
-});
-/* ФИКС: когда открывается экранная клавиатура, вьюпорт резко укорачивается и
-   поле ввода может уехать за границу — подтягиваем его обратно в зону видимости */
-(function(){
-  var m=document.getElementById('msg');
-  if(!m) return;
-  m.addEventListener('focus',function(){
-    setTimeout(function(){
-      try{ m.scrollIntoView({block:'center',behavior:'smooth'}); }catch(e){ try{ m.scrollIntoView(); }catch(_){} }
-    },320);
-  });
-  if(window.visualViewport){
-    window.visualViewport.addEventListener('resize',function(){
-      if(document.activeElement===m){
-        setTimeout(function(){ try{ m.scrollIntoView({block:'center'}); }catch(e){} },120);
-      }
-    });
-  }
-})();
-document.getElementById('nextBtn').onclick=function(){go(cur+1);};
-document.getElementById('backBtn').onclick=function(){go(cur-1);};
-document.getElementById('dossBtn').onclick=function(){openModal(ST[cur].d);};
-document.getElementById('mclose').onclick=closeModal;
-document.getElementById('fsBtn').onclick=toggleFS;
-document.getElementById('fsBtn2').onclick=toggleFS;
-
-document.addEventListener('keydown',function(e){
-  if(!started) return;
-  if(modal.classList.contains('on')){ if(e.key==='Escape') closeModal(); return; }
-  if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); if(!e.repeat) go(cur+1); }
-  if(e.key==='ArrowLeft'){ e.preventDefault(); if(!e.repeat) go(cur-1); }
-  if(e.key==='Enter'&&!e.repeat&&ST[cur].d) openModal(ST[cur].d);
-  if((e.key==='f'||e.key==='F')&&!e.repeat) toggleFS();
-});
-// swipe
-(function(){
-  var x0=null,y0=null;
-  document.addEventListener('touchstart',function(e){
-    x0=e.touches[0].clientX;y0=e.touches[0].clientY;},{passive:true});
-  document.addEventListener('touchend',function(e){
-    if(x0===null||!started||modal.classList.contains('on')){x0=null;return;}
-    var dx=e.changedTouches[0].clientX-x0, dy=e.changedTouches[0].clientY-y0;
-    if(Math.abs(dx)>58&&Math.abs(dx)>Math.abs(dy)*1.6){ go(cur+(dx<0?1:-1)); }
-    x0=null;},{passive:true});
+/* ================= FX canvas ================= */
+(function(){ const c=$('#fx'), x=c.getContext('2d'); let W,H,P=[];
+  function rs_(){ W=c.width=innerWidth*devicePixelRatio; H=c.height=innerHeight*devicePixelRatio; P=Array.from({length:Math.min(90,Math.floor(innerWidth/14))},()=>({x:Math.random()*W,y:Math.random()*H,r:rnd(.5,1.8)*devicePixelRatio,v:rnd(.08,.35)*devicePixelRatio,a:rnd(.15,.6),ch:Math.random()<.18})); }
+  addEventListener('resize',rs_); rs_();
+  const G='01ABCDEF{}:"=';
+  (function loop(){ x.clearRect(0,0,W,H);
+    for(const p of P){ p.y-=p.v; p.x+=Math.sin(p.y/90)*.2; if(p.y<-10){p.y=H+10;p.x=Math.random()*W}
+      if(p.ch){ x.fillStyle=`rgba(62,240,138,${p.a*.5})`; x.font=`${11*devicePixelRatio}px JetBrains Mono, monospace`; x.fillText(G[(p.x|0)%G.length],p.x,p.y); }
+      else { x.fillStyle=`rgba(182,255,211,${p.a})`; x.beginPath(); x.arc(p.x,p.y,p.r,0,7); x.fill(); } }
+    requestAnimationFrame(loop); })();
 })();
 
-buildNodes(); layout(); checkOrient();
-(function(){
-  var sk=document.getElementById('rotateSkip');
-  if(sk) sk.addEventListener('click',skipRotate);
-})();
-window.addEventListener('resize',onResize);
-window.addEventListener('orientationchange',function(){setTimeout(onResize,260);});
-/* Страховка 1: независимый канал детекции через matchMedia */
-try{
-  var mq=window.matchMedia('(orientation: landscape)');
-  var mqh=function(){ setTimeout(onResize,200); };
-  if(mq.addEventListener) mq.addEventListener('change',mqh);
-  else if(mq.addListener) mq.addListener(mqh);
-}catch(e){}
-/* Страховка 2: опрос — лёгкие мобильные браузеры (Via и др.) присылают
-   resize/orientationchange ненадёжно, из-за чего оверлей зависал навсегда.
-   Опрос сам по себе ничего не делает: он сравнивает размеры и вызывает
-   перерасчёт только когда они реально изменились. */
-(function(){
-  var pw=window.innerWidth, ph=window.innerHeight;
-  setInterval(function(){
-    var w=window.innerWidth, h=window.innerHeight;
-    if(w===pw&&h===ph) return;
-    pw=w; ph=h; onResize();
-  },600);
-})();
-/* подпись кнопки должна отражать реальное состояние полноэкранного режима */
-(function(){
-  function sync(){
-    var on=!!(document.fullscreenElement||document.webkitFullscreenElement);
-    var b=document.getElementById('fsBtn');
-    if(b){ b.textContent=on?'ОКНО':'ВЕСЬ ЭКРАН'; b.dataset.orig=b.textContent; }
-  }
-  document.addEventListener('fullscreenchange',sync);
-  document.addEventListener('webkitfullscreenchange',sync);
-})();
-setTimeout(function(){document.getElementById('msg').focus();},600);
+/* ================= UI helpers ================= */
+function toast(t,cls=''){ const d=document.createElement('div'); d.className='toast '+cls; d.innerHTML=t; $('#toasts').appendChild(d);
+  setTimeout(()=>{d.classList.add('out'); setTimeout(()=>d.remove(),400)},3200); }
+function xp(n,el,label){ const gain=Math.round(n*S.combo); S.xp+=gain; renderXP();
+  const r=(el&&el.getBoundingClientRect)?el.getBoundingClientRect():{left:innerWidth/2,top:innerHeight/2,width:0};
+  const f=document.createElement('div'); f.className='xpfly'; f.textContent='+'+gain+(label?' '+label:''); f.style.left=(r.left+r.width/2-30)+'px'; f.style.top=(r.top-10)+'px'; document.body.appendChild(f); setTimeout(()=>f.remove(),1200); SFX.coin(); }
+function comboUp(){ S.combo=Math.min(5,S.combo+1); S.best=Math.max(S.best,S.combo); renderXP(); }
+function comboReset(){ if(S.combo>1) toast('Комбо сброшено','bad'); S.combo=1; renderXP(); }
+function renderXP(){ $('#xpv').textContent=S.xp; $('#cmb').textContent='×'+S.combo; const r=rankOf(S.xp); const ri=RANKS.indexOf(r), nx=RANKS[ri+1];
+  if($('#rank').textContent!==r[1]){ if(S.xp>0) toast('🎖 Новое звание: <b>'+r[1]+'</b>','am'); $('#rank').textContent=r[1]; }
+  $('#xpb').style.width=(nx?((S.xp-r[0])/(nx[0]-r[0])*100):100)+'%'; }
+function confetti(n=70){ const cols=['#3ef08a','#21a038','#ffb020','#b6ffd3','#8fe3ff']; for(let i=0;i<n;i++){ const c=document.createElement('i'); c.className='conf';
+  c.style.left=Math.random()*100+'vw'; c.style.background=pick(cols); c.style.animationDuration=rnd(1.6,3.2)+'s'; c.style.animationDelay=rnd(0,.4)+'s'; c.style.borderRadius=Math.random()<.5?'50%':'2px'; document.body.appendChild(c); setTimeout(()=>c.remove(),4000);} }
+function hl(code){ // python highlighter
+  const re=/(#[^\n]*)|("""[\s\S]*?"""|[fbr]?"(?:\\.|[^"\\\n])*"|[fbr]?'(?:\\.|[^'\\\n])*')|\b(def|class|import|from|return|if|else|elif|for|while|in|not|and|or|try|except|raise|with|as|True|False|None|pass|continue|break|lambda|assert|is)\b|\b(\d+(?:\.\d+)?)\b|(@[\w.]+)|\b([a-zA-Z_]\w*)(?=\()/g;
+  let out='',last=0,m; while((m=re.exec(code))){ out+=esc(code.slice(last,m.index)); const t=esc(m[0]);
+    out+= m[1]?`<span class="c">${t}</span>`: m[2]?`<span class="s">${t}</span>`: m[3]?`<span class="k">${t}</span>`: m[4]?`<span class="n">${t}</span>`: m[5]?`<span class="k">${t}</span>`:`<span class="f">${t}</span>`; last=re.lastIndex; }
+  return out+esc(code.slice(last)); }
+function codeBlock(code){ return `<div class="code">${hl(code)}</div>`; }
+function jsonHL(o){ return esc(JSON.stringify(o,null,2)).replace(/(&quot;[^&]*?&quot;)(\s*:)/g,'<span class="n">$1</span>$2').replace(/:\s(&quot;.*?&quot;)/g,': <span class="s">$1</span>').replace(/:\s(\d+)/g,': <span class="f">$1</span>'); }
+
+/* ================= TOKEN timer ================= */
+function issueToken(silent){ S.tok=fakeToken(); S.tokExp=now()+30*60*1000; renderTok(); if(!silent){ toast('🔑 Токен получен · живёт <b>30:00</b>'); } return S.tok; }
+function tokLeft(){ return S.tok? S.tokExp-now() : -1; }
+function tokStr(){ return S.tok? S.tok.join('.'):''; }
+function fmt(ms){ ms=Math.max(0,ms); const m=Math.floor(ms/60000), s=Math.floor(ms%60000/1000); return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+let tokWasLive=false;
+function renderTok(){ const el=$('#tok'), t=$('#tokT'), f=$('#tokF'); el.className='';
+  if(!S.tok){ t.textContent='НЕТ ТОКЕНА'; f.style.width='0'; return; }
+  const l=tokLeft();
+  if(l<=0){ el.classList.add('dead'); t.textContent='ИСТЁК · 401'; f.style.width='0'; if(tokWasLive){ tokWasLive=false; SFX.alarm(); toast('⛔ Токен истёк. Любой запрос теперь вернёт <b>401</b>','bad'); } return; }
+  tokWasLive=true; el.classList.add(l<5*60e3?'warn':'live'); t.textContent='TOKEN '+fmt(l); f.style.width=(l/(30*60e3)*100)+'%'; }
+setInterval(renderTok,1000);
+
+/* ================= MODAL (досье) ================= */
+function dossier(title,html){ $('#mT').textContent=title; $('#mB').innerHTML=html; $('#modal').classList.add('on'); SFX.whoosh();
+  $$('.cpy',$('#mB')).forEach(b=>b.onclick=()=>{ const code=b.nextElementSibling.innerText; (navigator.clipboard?navigator.clipboard.writeText(code):Promise.reject()).then(()=>{b.textContent='✓ скопировано';SFX.ok()}).catch(()=>{ const r=document.createRange(); r.selectNodeContents(b.nextElementSibling); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent='выделено, жми Ctrl+C'; }); }); }
+function closeModal(){ $('#modal').classList.remove('on'); }
+$('#mX').onclick=closeModal; $('#modal').addEventListener('click',e=>{ if(e.target.id==='modal') closeModal(); });
+function codeWithCopy(code,note){ return (note?`<p>${note}</p>`:'')+`<div><button class="cpy" type="button">⧉ копировать</button>${codeBlock(code)}</div>`.replace('<div><button','<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start"><button'); }
 </script>
 <script>
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape' && window.parent !== window) {
-    window.parent.postMessage({ type: 'close-fullscreen' }, '*');
-  }
-});
+const PY={
+auth:`import base64
+
+CLIENT_ID = "019a6c1e-7b3d-7f4e-9c2a-5e8d1f0b4a77"   # из личного кабинета
+CLIENT_SECRET = "d41f9e0c-2b7a-4c8e-a913-6f5e0d2c7b18" # не публикуем!
+
+def make_auth_key(client_id: str, client_secret: str) -> str:
+    """Задание 8: Basic Auth. base64("client_id:client_secret")."""
+    raw = f"{client_id}:{client_secret}".encode("utf-8")
+    return base64.b64encode(raw).decode("ascii")
+
+AUTH_KEY = make_auth_key(CLIENT_ID, CLIENT_SECRET)
+print("Authorization: Basic", AUTH_KEY)`,
+
+token:`import uuid
+import requests
+
+OAUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+
+def get_token(auth_key: str, scope: str = "GIGACHAT_API_PERS") -> dict:
+    """Задание 1: получаем токен доступа (живёт 30 минут)."""
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "RqUID": str(uuid.uuid4()),          # уникальный id запроса
+        "Authorization": f"Basic {auth_key}",
+    }
+    r = requests.post(OAUTH_URL, headers=headers,
+                      data={"scope": scope}, timeout=10)
+    r.raise_for_status()
+    return r.json()   # {"access_token": "...", "expires_at": ...}`,
+
+models:`API_URL = "https://gigachat.devices.sberbank.ru/api/v1"
+# ранний доступ: https://gigachat-preview.devices.sberbank.ru/api/v1
+# и постфикс -preview в названии модели
+
+def bearer(token: str) -> dict:
+    return {"Accept": "application/json",
+            "Authorization": f"Bearer {token}"}
+
+def get_models(token: str) -> list[str]:
+    """Задание 2: GET-запрос списка моделей."""
+    r = requests.get(f"{API_URL}/models", headers=bearer(token), timeout=10)
+    r.raise_for_status()
+    return [m["id"] for m in r.json()["data"]]`,
+
+valid:`def is_token_valid(token: str) -> bool:
+    """Задание 3: валидность по коду ответа."""
+    r = requests.get(f"{API_URL}/models", headers=bearer(token), timeout=10)
+    if r.status_code == 200:
+        return True
+    if r.status_code == 401:      # истёк или неверный
+        return False
+    r.raise_for_status()          # прочие ошибки не маскируем
+
+def models_with_refresh(state: dict) -> list[str]:
+    """Задание 4: токен истёк → новый → повторяем запрос."""
+    if not state.get("token") or not is_token_valid(state["token"]):
+        state["token"] = get_token(AUTH_KEY)["access_token"]
+    return get_models(state["token"])`,
+
+cache:`import json, time
+from pathlib import Path
+
+CACHE = Path("token.json")
+MARGIN = 60  # обновляем за минуту до конца, а не впритык
+
+def _seconds(ts: float) -> float:
+    # API отдаёт expires_at в миллисекундах; страхуемся от секунд
+    return ts / 1000 if ts > 1e11 else ts
+
+def get_cached_token() -> str:
+    """Задание 5: кэш токена в файле + автообновление."""
+    try:
+        data = json.loads(CACHE.read_text(encoding="utf-8"))
+        if _seconds(data["expires_at"]) - time.time() > MARGIN:
+            return data["access_token"]          # HIT: берём из тайника
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        pass                                     # MISS: файла нет или он битый
+    data = get_token(AUTH_KEY)
+    CACHE.write_text(json.dumps(data), encoding="utf-8")
+    return data["access_token"]`,
+
+chat:`def ask(prompt: str, model: str = "GigaChat", history=None) -> str:
+    """Задание 6: запрос пользователя → ответ модели."""
+    messages = (history or []) + [{"role": "user", "content": prompt}]
+    body = {"model": model, "messages": messages, "temperature": 0.7}
+    data = api_request("POST", "/chat/completions", json=body)
+    return data["choices"][0]["message"]["content"]
+
+if __name__ == "__main__":
+    history = []
+    print("GigaChat на связи. Пустая строка, чтобы выйти.")
+    while (q := input("Вы: ").strip()):
+        a = ask(q, history=history)
+        history += [{"role": "user", "content": q},
+                    {"role": "assistant", "content": a}]
+        print("GigaChat:", a)`,
+
+errors:`import logging
+log = logging.getLogger("gigachat")
+
+class GigaChatError(Exception):
+    pass
+
+def api_request(method: str, path: str, retries: int = 3, **kw) -> dict:
+    """Задание 7: обработка кодов ответа API."""
+    for attempt in range(retries):
+        headers = bearer(get_cached_token())
+        r = requests.request(method, API_URL + path, headers=headers,
+                             timeout=30, **kw)
+        log.info("%s %s -> %s", method, path, r.status_code)
+        if r.status_code == 200:
+            return r.json()
+        if r.status_code == 401:                 # токен протух
+            CACHE.unlink(missing_ok=True)        # выбрасываем кэш
+            continue                             # и повторяем
+        if r.status_code == 429 or r.status_code >= 500:
+            wait = int(r.headers.get("Retry-After", 2 ** attempt))
+            time.sleep(wait)                     # пауза, потом повтор
+            continue
+        raise GigaChatError(f"{r.status_code}: {r.text[:200]}")  # 400/404/422
+    raise GigaChatError("API не ответил после повторов")`,
+
+proxy:`# server.py — Задание 9: прокси на FastAPI
+# запуск:  uvicorn server:app --reload
+import os
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import gigachat_client as gc   # ключ читается из переменной окружения
+
+app = FastAPI(title="GigaChat proxy")
+
+class Question(BaseModel):
+    prompt: str
+    model: str = "GigaChat"
+
+@app.post("/ask")
+def ask(q: Question):
+    try:
+        return {"answer": gc.ask(q.prompt, q.model)}
+    except gc.GigaChatError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+@app.get("/models")
+def models():
+    return {"models": gc.get_models(gc.get_cached_token())}`,
+
+env:`# .env на сервере (в git не коммитим, добавляем в .gitignore)
+GIGACHAT_AUTH_KEY=MDE5YTZjMWUtN2IzZC03ZjRlLTljMmEt...
+
+# gigachat_client.py
+import os
+AUTH_KEY = os.environ["GIGACHAT_AUTH_KEY"]`,
+
+tests:`# test_gigachat.py — Задание 10:  pytest -v
+import base64, os
+import pytest, requests
+import gigachat_client as gc
+
+class FakeResp:
+    def __init__(self, status, payload):
+        self.status_code, self._p = status, payload
+    def json(self):
+        return self._p
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(self.status_code)
+
+def test_auth_key_is_base64():
+    key = gc.make_auth_key("id", "secret")
+    assert base64.b64decode(key) == b"id:secret"
+
+def test_get_token(monkeypatch):
+    def fake_post(url, headers, data, timeout):
+        assert headers["Authorization"].startswith("Basic ")
+        assert "RqUID" in headers
+        assert data["scope"] == "GIGACHAT_API_PERS"
+        return FakeResp(200, {"access_token": "abc", "expires_at": 9e12})
+    monkeypatch.setattr(gc.requests, "post", fake_post)
+    assert gc.get_token("KEY")["access_token"] == "abc"
+
+def test_get_models(monkeypatch):
+    monkeypatch.setattr(gc.requests, "get",
+        lambda *a, **k: FakeResp(200, {"data": [{"id": "GigaChat"}]}))
+    assert gc.get_models("abc") == ["GigaChat"]
+
+def test_401_means_invalid(monkeypatch):
+    monkeypatch.setattr(gc.requests, "get", lambda *a, **k: FakeResp(401, {}))
+    assert gc.is_token_valid("old") is False
+
+@pytest.mark.skipif(not os.getenv("GIGACHAT_AUTH_KEY"), reason="нет ключа")
+def test_real_api():                     # интеграционный, с настоящим ключом
+    token = gc.get_token(os.environ["GIGACHAT_AUTH_KEY"])["access_token"]
+    assert "GigaChat" in " ".join(gc.get_models(token))`,
+};
+PY.full=`# gigachat_client.py — ПР №5 «Российские GPT-модели», задания 1–8
+import base64, json, logging, os, time, uuid
+from pathlib import Path
+import requests
+
+OAUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth"
+API_URL = "https://gigachat.devices.sberbank.ru/api/v1"
+AUTH_KEY = os.environ.get("GIGACHAT_AUTH_KEY", "")   # ключ только из окружения
+# Серверы GigaChat используют сертификат НУЦ Минцифры: установите его в систему
+# или передайте в requests параметр verify="russian_trusted_root_ca.cer"
+
+`+[
+  PY.auth.split('\n').slice(4,9).join('\n'),
+  PY.token.split('\n').slice(5).join('\n'),
+  PY.models.split('\n').slice(4).join('\n'),
+  PY.valid,
+  PY.cache.split('\n').slice(4).join('\n'),
+  PY.errors.split('\n').slice(1).join('\n'),
+  PY.chat].join('\n\n\n');
 </script>
-<!-- broken-img-handler -->
 <script>
-(function(){
-  if(window.__brokenImgHandler)return;
-  window.__brokenImgHandler=true;
-  var MAX=5,DELAYS=[2000,4000,8000,16000,32000];
-  var TOKEN=/^__(?:IMG|EMBED)_[a-zA-Z0-9_-]+__/;
-  var SENTINEL=new RegExp('^/api/published/[^/]+/(?:assets|embeds)/[^/?#]*-missing(?:[?#]|$)');
-  var NOISE=/^[\s\u2018\u2019\u201c\u201d]+|[\s\u2018\u2019\u201c\u201d]+$/g;
-  function canSrcEverResolve(src){
-    var bare=src.replace(NOISE,'');
-    return !TOKEN.test(bare)&&!SENTINEL.test(bare);
-  }
-  document.addEventListener('error',function(e){
-    var img=e.target;
-    if(!img||img.tagName!=='IMG')return;
-    var liveSrc=img.getAttribute('src');
-    var src=img.dataset.haOriginalSrc||liveSrc;
-    if(!src)return;
-    if(img.dataset.haOriginalSrc&&liveSrc&&liveSrc!==img.dataset.haOriginalSrc&&liveSrc.indexOf('_r=')<0){src=liveSrc;img.dataset.haOriginalSrc=src;img.dataset.haRetryCount='0'}
-    else if(!img.dataset.haOriginalSrc){img.dataset.haOriginalSrc=src}
-    var attempt=canSrcEverResolve(src)?parseInt(img.dataset.haRetryCount||'0',10):MAX;
-    if(img.dataset.haPhId){var old=document.getElementById(img.dataset.haPhId);if(old)old.remove()}
-    var ph=document.createElement('div');
-    ph.className='ha-img-placeholder'+(attempt>=MAX?' ha-failed':'');
-    ph.id='ha-ph-'+Math.random().toString(36).slice(2,9);
-    var w=img.getAttribute('width');var h=img.getAttribute('height');
-    if(w)ph.style.width=w+(isNaN(Number(w))?'':'px');
-    else if(img.style.width)ph.style.width=img.style.width;
-    else if(img.width>1)ph.style.width=img.width+'px';
-    if(h)ph.style.height=h+(isNaN(Number(h))?'':'px');
-    else if(img.style.height)ph.style.height=img.style.height;
-    else if(img.height>1)ph.style.height=img.height+'px';
-    ph.textContent=attempt>=MAX?'Image unavailable':'Loading image\u2026';
-    img.dataset.haPhId=ph.id;
-    if(img.dataset.haOrigDisplay==null)img.dataset.haOrigDisplay=img.style.display||'';
-    img.style.display='none';
-    img.insertAdjacentElement('afterend',ph);
-    if(attempt<MAX){
-      img.dataset.haRetryCount=String(attempt+1);
-      setTimeout(function(){
-        if(!img.isConnected)return;
-        if(img.dataset.haOriginalSrc!==src)return;
-        if(img.complete&&img.naturalWidth>0)return;
-        var curSrc=img.getAttribute('src');
-        if(curSrc&&curSrc.indexOf(src)!==0)return;
-        var fresh=src+(src.indexOf('?')>=0?'&':'?')+'_r='+(attempt+1)+'_'+Date.now();
-        img.src=fresh;
-      },DELAYS[attempt]);
-    }
-  },true);
-  document.addEventListener('load',function(e){
-    var img=e.target;
-    if(!img||img.tagName!=='IMG')return;
-    if(img.dataset.haPhId){
-      var ph=document.getElementById(img.dataset.haPhId);
-      if(ph)ph.remove();
-      delete img.dataset.haPhId;
-      img.style.display=img.dataset.haOrigDisplay||'';
-      delete img.dataset.haOrigDisplay;
-      delete img.dataset.haOriginalSrc;
-      delete img.dataset.haRetryCount;
-    }
-  },true);
-})();
+/* ================= SCENE ENGINE ================= */
+let CUR={alive:false,timers:[]};
+function T(fn,ms){ const c=CUR; const id=setTimeout(()=>{ if(c.alive) fn(); },ms); c.timers.push(id); return id; }
+function wait(ms){ const c=CUR; return new Promise((res,rej)=>setTimeout(()=>c.alive?res():rej('dead'),ms)); }
+function complete(bonus=100){ const sc=SC[S.i]; if(!S.done.has(S.i)){ S.done.add(S.i); xp(bonus,$('#nextBtn'),'МИССИЯ'); SFX.win(); } const n=$('#nextBtn'); if(n) n.classList.add('ready'); renderTrack(); }
+function renderTrack(){ $('#track').innerHTML=SC.map((s,k)=>`<i class="${k===S.i?'cur':S.done.has(k)?'done':''}" title="${esc(s.short)}" data-k="${k}"></i>`).join(''); $$('#track i').forEach(e=>e.onclick=()=>go(+e.dataset.k)); }
+let busy=false;
+async function go(i,opts={}){ if(busy||i<0||i>=SC.length) return; busy=true; closeModal();
+  const sc=SC[i]; const doors=opts.doors!==false;
+  if(doors){ $('#dL').innerHTML=`<small>${esc(sc.door[0])}</small>${sc.door[1]}`; $('#dR').innerHTML=`<small>&nbsp;</small>${sc.door[2]}`; document.body.classList.add('doors'); SFX.door(); await sleep(650); }
+  CUR.alive=false; CUR.timers.forEach(clearTimeout); if(CUR.leave) try{CUR.leave()}catch(e){}
+  document.body.classList.remove('alarm');
+  CUR={alive:true,timers:[]}; S.i=i;
+  $('#scene').innerHTML=`<section class="brief enter"><div class="tag">${sc.tag}</div><h2 class="title">${sc.title}</h2><p class="lead">${sc.lead}</p>
+    <div class="ctl">${i>0?'<button class="btn small" id="backBtn" type="button">←</button>':''}<button class="btn small amber" id="dossBtn" type="button">📁 Досье</button>${i<SC.length-1?'<button class="btn go" id="nextBtn" type="button">Дальше →</button>':''}</div></section>
+    <section class="stage enter" id="stage"></section>`;
+  if(S.done.has(i)) $('#nextBtn')?.classList.add('ready');
+  $('#backBtn')&&($('#backBtn').onclick=()=>go(S.i-1)); $('#nextBtn')&&($('#nextBtn').onclick=()=>go(S.i+1));
+  $('#dossBtn').onclick=()=>dossier(sc.dossT,sc.doss());
+  renderTrack();
+  try{ sc.build($('#stage')); }catch(e){ console.error(e); }
+  if(doors){ await sleep(380); document.body.classList.remove('doors'); SFX.whoosh(); await sleep(500); }
+  busy=false; }
+addEventListener('keydown',e=>{ if($('#app').classList.contains('on')===false) return; if(e.key==='Escape') closeModal();
+  const typing=/INPUT|TEXTAREA/.test(document.activeElement?.tagName); if(typing||$('#modal').classList.contains('on')) return;
+  if(e.key==='ArrowRight') go(S.i+1); if(e.key==='ArrowLeft') go(S.i-1); });
+
+async function cineLines(lines){ const box=$('#cine'), tx=$('#cineTxt'); box.classList.add('on'); document.body.classList.add('cine'); let skip=false; box.onclick=()=>{skip=true};
+  for(const l of lines){ if(skip) break; tx.innerHTML='<span class="cur"></span>'; let s='';
+    for(const ch of l){ if(skip) break; s+=ch; tx.innerHTML=esc(s).replace(/\*(.+?)\*/g,'<b>$1</b>')+'<span class="cur"></span>'; if(ch!==' ') SFX.tick(); await sleep(ch==='.'||ch===','?140:34); }
+    if(!skip) await sleep(1100); }
+  box.classList.remove('on'); }
+async function slam(a,b,ms=1300){ const s=$('#slam'); $('#slam1').textContent=a; $('#slam2').innerHTML=b; s.classList.remove('on'); void s.offsetWidth; s.classList.add('on'); SFX.slam(); await sleep(ms); s.classList.remove('on'); }
+
+function scramble(el,final,dur=900){ return new Promise(res=>{ const al='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='; const t0=performance.now();
+  (function f(t){ const p=Math.min(1,(t-t0)/dur), n=Math.floor(final.length*p); let s=final.slice(0,n); for(let i=n;i<final.length;i++) s+=al[Math.random()*al.length|0];
+    el.textContent=s; if(Math.random()<.4) SFX.tick(); if(p<1) requestAnimationFrame(f); else res(); })(t0); }); }
+function opt(btns,correct,onPick){ btns.forEach((b,k)=>b.onclick=()=>{ const ok=k===correct; btns.forEach(x=>x.disabled=true); b.classList.add(ok?'ok':'bad'); if(!ok){ btns[correct].classList.add('ok'); } onPick(ok,b); }); }
+function jweHTML(t){ return t.map((p,k)=>`<i class="p${k}">${esc(p)}</i>`).join('<i class="p1">.</i>'); }
+function needToken(){ if(!S.tok||tokLeft()<=0){ issueToken(true); toast('🔑 Выдали свежий токен, чтобы не застрять','am'); } }
+
+/* ================= SCENES ================= */
+const SC=[];
+
+/* ---- 0. FIGHTER SELECT ---- */
+SC.push({short:'Выбор модели',door:['ПРОЛОГ','ВЫБОР','<span>БОЙЦА</span>'],tag:'Пролог <em>· цель работы</em>',title:'Выбери <span>бойца</span>',
+ lead:'Российские GPT-модели: <b>GigaChat</b> от Сбера и <b>YandexGPT</b> от Яндекса. Обе работают по API. Цель лабы: получить токен и подключить модель к своему приложению на Python.',
+ dossT:'Досье · ПР №5',
+ doss:()=>`<p><b>Цель:</b> взаимодействие с моделями через веб-сервис, получение токенов и их использование в приложении на Python.</p>
+ <p><b>Задания:</b> 1 токен через requests · 2 список моделей · 3 проверка валидности · 4 перезапрос истёкшего токена · 5 автообновление и кэш в файле · 6 клиентское приложение · 7 обработка ошибок 401/429 · 8 Basic Auth и base64 · 9 прокси на Flask/FastAPI · 10 тест на pytest.</p>
+ <p><b>Порядок:</b> определить операции → разработать веб-сервис → настроить клиент → обмен данными в JSON → обработка ошибок.</p>
+ <p>Каждая миссия здесь закрывает одно или два задания, а в досье миссии лежит рабочий код.</p>`,
+ build(st){ st.innerHTML=`<div class="fs">
+   <button class="ft gc" type="button"><span class="p1">PLAYER 1</span><div class="av"></div><div><div class="who">СБЕР</div><h4>GigaChat</h4></div>
+     <ul><li>REST API по OAuth 2.0</li><li>Токен живёт 30 минут</li><li>Вход: ngw.devices.sberbank.ru</li><li>Есть ранний доступ: -preview</li></ul></button>
+   <div class="vs">VS</div>
+   <button class="ft ya" type="button"><span class="p1" style="background:#ffcc00">ЗАПАСНОЙ</span><div class="av"></div><div><div class="who">ЯНДЕКС</div><h4>YandexGPT</h4></div>
+     <ul><li>API в Yandex Cloud</li><li>IAM-токен или API-ключ</li><li>Отдельный каталог и биллинг</li><li>В этой лабе на скамейке</li></ul></button></div>`;
+  const gc=$('.ft.gc',st), ya=$('.ft.ya',st);
+  ya.onclick=()=>{ ya.classList.add('sel','shake'); SFX.bad(); toast('Сильный боец, но методичка выбрала <b>GigaChat</b>','am'); T(()=>ya.classList.remove('shake','sel'),900); };
+  gc.onclick=async()=>{ if(gc.classList.contains('sel')) return; gc.classList.add('sel'); SFX.ok(); xp(50,gc); await slam('PLAYER 1 · GIGACHAT','РАУНД <em>1</em>',1100); complete(); };
+ }});
+
+/* ---- 1. BASE64 ---- */
+SC.push({short:'Basic Auth',door:['МИССИЯ 01 · ЗАДАНИЕ 8','КЛЮЧ','<span>АВТОРИЗАЦИИ</span>'],tag:'Миссия 01 <em>· задание 8</em>',title:'Собери <span>ключ</span>',
+ lead:'Ключ авторизации: <b>Client ID</b> и <b>Client Secret</b> через двоеточие, закодированные в <b>base64</b>. Он едет в заголовке <b>Authorization: Basic</b>, и только в запросе за токеном.',
+ dossT:'Досье · Basic Auth и base64', doss:()=>codeWithCopy(PY.auth,'В личном кабинете GigaChat ключ авторизации выдают уже готовым. Но собрать его руками полезно: так видно, что это не шифр.'),
+ build(st){ st.innerHTML=`<div class="b64">
+   <div class="two"><label class="col" style="gap:6px"><span class="lbl">Client ID</span><input class="inp" id="cid" value="019a6c1e-7b3d-7f4e-9c2a-5e8d1f0b4a77" spellcheck="false"></label>
+   <label class="col" style="gap:6px"><span class="lbl">Client Secret</span><input class="inp" id="csec" value="d41f9e0c-2b7a-4c8e-a913-6f5e0d2c7b18" spellcheck="false"></label></div>
+   <div class="row"><span class="lbl">строка</span><span class="raw" id="raw"></span></div>
+   <div class="row"><button class="btn go" id="enc" type="button">⚙ Кодировать в base64</button></div>
+   <div class="out" id="out"><span class="hdr">Authorization: Basic …</span></div>
+   <div class="qbox" id="q" style="display:none"><div class="q">Base64 защищает секрет от чужих глаз?</div>
+     <div class="opts"><button class="opt" type="button">Да, это шифрование</button><button class="opt" type="button">Нет, это просто упаковка</button></div><div id="hack"></div></div></div>`;
+  const raw=$('#raw',st), upd=()=>raw.innerHTML=`<span class="c">${esc($('#cid',st).value)}</span>:<span class="c">${esc($('#csec',st).value)}</span>`; upd();
+  $('#cid',st).oninput=upd; $('#csec',st).oninput=upd;
+  $('#enc',st).onclick=async()=>{ const key=b64($('#cid',st).value+':'+$('#csec',st).value); const o=$('#out',st); o.innerHTML='<span class="hdr">Authorization: Basic </span><span id="k"></span>';
+    SFX.zap(); await scramble($('#k',o),key,1000); o.classList.add('flashok'); SFX.ok(); if(!CUR.b64){ CUR.b64=1; xp(60,o); }
+    const q=$('#q',st); q.style.display='flex';
+    opt($$('.opt',q),1,(ok,b)=>{ if(ok){ xp(80,b); comboUp(); } else { SFX.bad(); comboReset(); }
+      $('#hack',q).innerHTML=`<div class="row" style="margin-top:4px"><button class="btn small red" id="hk" type="button">🔓 Взломать</button><span class="lead" style="font-size:15px">base64 раскодирует кто угодно. Защищает только HTTPS и то, что ключ не лежит на виду.</span></div>`;
+      $('#hk',q).onclick=async()=>{ SFX.alarm(); const t=$('#k',st); await scramble(t,unb64(key),700); t.style.color='var(--rd)'; toast('💥 Секрет вскрыт за миллисекунду','bad'); complete(); }; }); };
+ }});
+
+/* ---- 2. TOKEN REQUEST ---- */
+SC.push({short:'Получение токена',door:['МИССИЯ 02 · ЗАДАНИЕ 1','ЗАПРОС','<span>ТОКЕНА</span>'],tag:'Миссия 02 <em>· задание 1</em>',title:'Добудь <span>токен</span>',
+ lead:'Собери <b>POST /api/v2/oauth</b>: тип тела, уникальный <b>RqUID</b> (uuid4), ключ и <b>scope</b>. Тапай фишки в пустые слоты по порядку. Одна ловушка на каждый слот.',
+ dossT:'Досье · получение токена', doss:()=>codeWithCopy(PY.token,'Тот же запрос из методички, переведённый с curl на requests. Токен отправлять можно до 10 раз в секунду, но правильнее получать его раз в 30 минут.'),
+ build(st){ const slots=[['ct','Content-Type:'],['rq','RqUID:'],['au','Authorization:'],['sc','body · scope=']];
+  const chips=shuffle([{t:'application/x-www-form-urlencoded',s:'ct'},{t:'application/json',why:'Тело здесь не JSON, а форма: scope=GIGACHAT_API_PERS'},
+    {t:'🎰 uuid4()',s:'rq'},{t:'12345',why:'RqUID должен быть уникальным uuid4, а не «12345»'},
+    {t:'Basic <ключ>',s:'au'},{t:'Bearer <токен>',why:'Bearer понадобится позже. Токена ещё нет: мы за ним и пришли'},
+    {t:'GIGACHAT_API_PERS',s:'sc'},{t:'GIGACHAT_API_CORP',why:'CORP для ИП и юрлиц по pay-as-you-go. Мы физлица: PERS'}]);
+  st.innerHTML=`<div class="col"><div class="req">
+    <div class="line"><span class="m">POST</span><span>https://ngw.devices.sberbank.ru:9443/api/v2/oauth</span></div>
+    ${slots.map(([k,h])=>`<div class="line"><span class="h">${h}</span><span class="slot" data-s="${k}">?</span></div>`).join('')}
+    <div class="line"><span class="h">Accept:</span><span>application/json</span></div></div>
+    <div class="chips" id="chips">${chips.map((c,k)=>`<button class="chip" data-k="${k}" type="button">${esc(c.t)}</button>`).join('')}</div>
+    <div id="send" style="display:none"><div class="wire"><span class="nd l">💻 твой скрипт</span><span class="ln"></span><span class="pk" id="pk"></span><span class="nd r">🔐 ngw :9443</span></div>
+    <button class="btn go" id="post" type="button">▶ Отправить POST</button></div><div id="resp"></div></div>`;
+  const sEls=$$('.slot',st); const act=()=>{ sEls.forEach(e=>e.classList.remove('act')); const f=sEls.find(e=>!e.classList.contains('fill')); if(f) f.classList.add('act'); return f; }; act();
+  $$('.chip',st).forEach(b=>b.onclick=async()=>{ const c=chips[+b.dataset.k];
+    if(!c.s){ b.classList.add('shake'); SFX.bad(); comboReset(); toast('✖ '+esc(c.why),'bad'); T(()=>b.classList.remove('shake'),500); return; }
+    const sl=sEls.find(e=>e.dataset.s===c.s); if(sl.classList.contains('fill')) return; b.classList.add('used');
+    sl.classList.add('fill'); SFX.ok(); comboUp(); xp(25,sl);
+    if(c.s==='rq'){ const u=uuid4(); for(let i=0;i<10;i++){ sl.textContent=uuid4(); SFX.tick(); await sleep(45); } sl.textContent=u; } else sl.textContent=c.t;
+    if(!act()){ $$('.chip',st).forEach(x=>x.classList.add('used')); $('#send',st).style.display='block'; toast('Запрос собран. Жми «Отправить»'); } });
+  $('#post',st).onclick=async()=>{ const p=$('#post',st); p.disabled=true; const pk=$('#pk',st); pk.className='pk fly'; SFX.whoosh(); await sleep(1150); pk.className='pk back'; SFX.whoosh(); await sleep(1000); pk.className='pk';
+    issueToken(); const exp=S.tokExp-S.warp;
+    $('#resp',st).innerHTML=`<div class="row" style="margin:8px 0"><span class="pill ok">200 OK</span><span class="pill am">токен на 30 минут</span></div>
+     <div class="tcard"><div class="tt">🔑 access_token</div><div class="jwe">${jweHTML(S.tok)}</div><div class="kv"><span class="h">expires_at:</span> <span style="color:var(--am)">${exp}</span> <span class="h">// мс, через 30 минут</span></div></div>`;
+    await slam('ДОСТУП ПОЛУЧЕН','ТОКЕН <em>30:00</em>',1200); complete(); $('#resp',st).scrollIntoView({behavior:'smooth',block:'nearest'}); };
+ }});
+
+/* ---- 3. MODELS ---- */
+const MODELS=[['GigaChat-2','базовая, быстрая, для простых задач'],['GigaChat-2-Pro','сложные инструкции, лучше рассуждает'],['GigaChat-2-Max','самая мощная в линейке'],['Embeddings','векторы текста для поиска и RAG']];
+SC.push({short:'Список моделей',door:['МИССИЯ 03 · ЗАДАНИЕ 2','РАЗВЕДКА','<span>МОДЕЛЕЙ</span>'],tag:'Миссия 03 <em>· задание 2</em>',title:'Разведка <span>моделей</span>',
+ lead:'Первый запрос с токеном: <b>GET /api/v1/models</b>, заголовок <b>Authorization: Bearer</b>. Переключатель показывает ранний доступ: другой хост и постфикс <b>-preview</b>.',
+ dossT:'Досье · список моделей', doss:()=>codeWithCopy(PY.models,'Bearer-токен используется во всех запросах к GigaChat API, кроме запроса за самим токеном.'),
+ build(st){ let pre=false, scanned=false;
+  st.innerHTML=`<div class="col"><div class="row" style="justify-content:space-between"><div class="sw"><button class="on" data-p="0" type="button">ПРОМ</button><button data-p="1" type="button">РАННИЙ ДОСТУП</button></div><button class="btn small" id="raw" type="button">{ } сырой JSON</button></div>
+   <div class="req"><div class="line"><span class="m" style="background:var(--g2)">GET</span><span id="url"></span></div><div class="line"><span class="h">Authorization:</span><span id="bear" style="color:var(--ice)"></span></div></div>
+   <div class="row" style="align-items:flex-start;flex-wrap:nowrap;gap:16px"><div class="col" style="align-items:center"><div class="radar" id="rad"></div><button class="btn go" id="scan" type="button">📡 Сканировать</button></div><div class="roster" id="ros"></div></div>
+   <div id="rj" style="display:none"></div><div class="lead" style="font-size:14px">Пример ответа. Точный список зависит от твоего доступа и версии API.</div></div>`;
+  const host=()=>pre?'gigachat-preview.devices.sberbank.ru':'gigachat.devices.sberbank.ru';
+  const names=()=>MODELS.map(([n,d])=>[n+(pre&&n!=='Embeddings'?'-preview':''),d]);
+  const upd=()=>{ $('#url',st).textContent=`https://${host()}/api/v1/models`; $('#bear',st).textContent=S.tok?'Bearer '+tokStr().slice(0,26)+'…':'Bearer — (токена нет)';
+    if(scanned) $('#ros',st).innerHTML=names().map(([n,d],k)=>`<div class="mcard" style="animation-delay:${k*.08}s"><div class="nm">${n}</div><div class="ds">${d}</div></div>`).join('');
+    $('#rj',st).innerHTML=`<div class="code">${jsonHL({object:'list',data:names().map(([n])=>({id:n,object:'model',owned_by:'salutedevices'}))})}</div>`; };
+  upd();
+  $$('.sw button',st).forEach(b=>b.onclick=()=>{ pre=b.dataset.p==='1'; $$('.sw button',st).forEach(x=>x.classList.toggle('on',x===b)); SFX.click(); upd(); });
+  $('#raw',st).onclick=()=>{ const r=$('#rj',st); r.style.display=r.style.display==='none'?'block':'none'; SFX.click(); };
+  $('#scan',st).onclick=async()=>{ needToken(); upd(); const r=$('#rad',st); r.classList.add('on'); $('#ros',st).innerHTML=''; for(let i=0;i<4;i++){ tone(1200,.08,'sine',.12,0); await sleep(330);} r.classList.remove('on'); scanned=true; upd(); SFX.ok(); xp(60,$('#ros',st)); complete(); };
+ }});
+
+/* ---- 4. EXPIRY ---- */
+SC.push({short:'Токен истёк',door:['МИССИЯ 04 · ЗАДАНИЯ 3–4','ТОКЕН','<span>ИСТЁК</span>'],tag:'Миссия 04 <em>· задания 3 и 4</em>',title:'Фитиль <span>догорел</span>',
+ lead:'Токен живёт <b>30 минут</b>. Проверка валидности: шлём запрос и смотрим код. <b>200</b> значит жив, <b>401</b> значит пора за новым, а потом повторить запрос.',
+ dossT:'Досье · валидность и перезапрос', doss:()=>codeWithCopy(PY.valid,'is_token_valid() разбирает код ответа, а models_with_refresh() сам берёт новый токен и повторяет запрос.'),
+ build(st){ needToken();
+  st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:14px" id="box">
+    <div class="lbl">осталось жить токену</div><div class="clock" id="clk">${fmt(tokLeft())}</div><div class="kv"><span class="h">is_token_valid(token) →</span> <span id="val" style="color:var(--g2)">True</span></div>
+    <button class="btn go" id="warp" type="button">⏩ Перемотать на 30 минут</button></div>`;
+  const clk=$('#clk',st); const iv=setInterval(()=>{ if(!CUR.warping) clk.textContent=fmt(tokLeft()); },1000); CUR.leave=()=>clearInterval(iv);
+  $('#warp',st).onclick=async()=>{ CUR.warping=true; $('#warp',st).disabled=true; document.body.classList.add('cine'); const start=S.warp, need=tokLeft()+800, t0=performance.now(), D=2600;
+    await new Promise(res=>{ (function f(t){ const p=Math.min(1,(t-t0)/D), e=p*p*(3-2*p); S.warp=start+need*e; clk.textContent=fmt(tokLeft()); renderTok(); if(Math.random()<.5) SFX.tick(); if(p<1) requestAnimationFrame(f); else res(); })(t0); });
+    document.body.classList.remove('cine'); CUR.warping=false; renderTok(); document.body.classList.add('alarm'); $('#scene').classList.add('glitch'); setTimeout(()=>$('#scene').classList.remove('glitch'),1600);
+    st.innerHTML=`<div class="col" style="gap:14px"><div class="row" style="align-items:flex-end;gap:18px"><div class="big401">401</div><div class="lead" style="font-size:16px"><b style="color:#ffc2c8">Unauthorized</b><br>Токен истёк. is_token_valid() → <span style="color:var(--rd)">False</span></div></div>
+      <div class="flow" id="fl"><span class="fst">GET /models</span><span class="arr">→</span><span class="fst">401?</span><span class="arr">→</span><span class="fst">get_token()</span><span class="arr">→</span><span class="fst">повтор</span><span class="arr">→</span><span class="fst">200 OK</span></div>
+      <div><button class="btn go" id="ref" type="button">🔑 Обновить токен</button></div></div>`;
+    $('#ref',st).onclick=async()=>{ $('#ref',st).disabled=true; const f=$$('.fst',st);
+      for(let k=0;k<f.length;k++){ f[k].classList.add(k===1?'red':'lit'); k===1?SFX.bad():SFX.click(); await sleep(420); }
+      document.body.classList.remove('alarm'); issueToken(); SFX.ok(); await slam('АВТООБНОВЛЕНИЕ','СНОВА <em>30:00</em>',1100); xp(80,f[4]); complete(); }; };
+ }});
+</script>
+<script>
+/* ---- 5. CACHE ---- */
+const ROUNDS=[
+ {f:'ok',left:'24:10',t:'Скрипт запущен. В token.json лежит токен, до конца 24 минуты.',a:'c',why:'Жив и запас больше минуты: берём из файла, сеть не трогаем'},
+ {f:'none',t:'Первый запуск на новом компьютере. Файла token.json нет.',a:'n',why:'Брать нечего: запрашиваем токен и сохраняем в файл'},
+ {f:'ok',left:'00:40',t:'В файле токен, но жить ему 40 секунд.',a:'n',why:'Меньше запаса MARGIN = 60 с: обновляем заранее, иначе умрёт посреди запроса'},
+ {f:'dead',left:'−05:00',t:'В файле токен, который истёк 5 минут назад.',a:'n',why:'Мёртвый токен даст 401. Новый, и перезаписать файл'},
+ {f:'ok',left:'03:15',t:'Токен живёт ещё 3 минуты 15 секунд.',a:'c',why:'Запас больше минуты: из кэша'},
+ {f:'broken',t:'Файл token.json повреждён: внутри обрывок JSON.',a:'n',why:'Ловим json.JSONDecodeError и получаем новый токен'}];
+SC.push({short:'Кэш токена',door:['МИССИЯ 05 · ЗАДАНИЕ 5','ТАЙНИК','<span>TOKEN.JSON</span>'],tag:'Миссия 05 <em>· задание 5</em>',title:'Тайник <span>с токеном</span>',
+ lead:'Не дёргаем OAuth на каждый запуск. Токен лежит в <b>token.json</b>, а скрипт решает: <b>взять из кэша</b> или <b>запросить новый</b>. На решение 8 секунд.',
+ dossT:'Досье · кэш и автообновление', doss:()=>codeWithCopy(PY.cache,'expires_at приходит в миллисекундах Unix-времени. Запас в 60 секунд нужен, чтобы токен не истёк прямо во время запроса.'),
+ build(st){ let r=0, score=0, res=[];
+  const fileHTML=R=>{ if(R.f==='none') return `<div class="fn">📄 token.json</div><div class="lead" style="color:var(--rd)">FileNotFoundError: файла нет</div>`;
+    if(R.f==='broken') return `<div class="fn">📄 token.json</div><div class="code">{"access_token": "eyJhbGci…Dx7i<span style="color:var(--rd)">▒▒▒</span></div>`;
+    return `<div class="fn">📄 token.json</div><div class="code">${jsonHL({access_token:'eyJhbGci…'+rs(6),expires_at:1791000000000})}</div><div class="row" style="margin-top:8px"><span class="pill ${R.f==='dead'?'bad':R.left<'01:00'?'am':'ok'}">осталось ${R.left}</span></div>`; };
+  const draw=()=>{ const R=ROUNDS[r];
+    st.innerHTML=`<div class="col"><div class="row" style="justify-content:space-between"><div class="dots">${ROUNDS.map((_,k)=>`<i class="${res[k]===true?'ok':res[k]===false?'bad':k===r?'cur':''}"></i>`).join('')}</div><span class="lbl">раунд ${r+1} / ${ROUNDS.length}</span></div>
+     <div class="safe"><div class="file">${fileHTML(R)}</div><div class="sit"><div class="stx">${R.t}</div><div class="tbar"><b id="tb"></b></div>
+     <div class="row"><button class="btn go" data-a="c" type="button">📦 Из кэша</button><button class="btn amber" data-a="n" type="button">🌐 Новый токен</button></div><div id="why" class="lead" style="font-size:15px"></div></div></div></div>`;
+    const tb=$('#tb',st); tb.style.transition='none'; tb.style.transform='scaleX(1)'; void tb.offsetWidth; tb.style.transition='transform 8s linear'; tb.style.transform='scaleX(0)';
+    let done=false; const fin=(ok,el)=>{ if(done) return; done=true; clearTimeout(to); res[r]=ok; $$('[data-a]',st).forEach(b=>b.disabled=true);
+      $('#why',st).innerHTML=(ok?'✔ ':'✖ ')+R.why; tb.style.transition='none';
+      if(ok){ score++; comboUp(); xp(40,el); } else { SFX.bad(); comboReset(); $('.safe',st).classList.add('shake'); }
+      T(()=>{ r++; r<ROUNDS.length?draw():end(); },1700); };
+    const to=T(()=>fin(false,null),8000);
+    $$('[data-a]',st).forEach(b=>b.onclick=()=>fin(b.dataset.a===R.a,b)); };
+  const end=()=>{ st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:12px"><div class="clock" style="color:${score>=4?'var(--g2)':'var(--am)'}">${score}/${ROUNDS.length}</div>
+     <div class="lead">${score>=5?'Тайник под контролем. Скрипт ходит в OAuth только когда надо.':score>=3?'Неплохо, но пара лишних запросов за токеном.':'Скрипт то спамит OAuth, то ловит 401. Ещё заход?'}</div><button class="btn" id="again" type="button">↻ Ещё раз</button></div>`;
+    $('#again',st).onclick=()=>{ r=0;score=0;res=[];draw(); }; complete(score>=4?150:80); if(score>=5) confetti(40); };
+  st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:14px"><div style="font-size:54px">🗄</div><div class="lead">Шесть ситуаций. В каждой решаешь, откуда взять токен.</div><button class="btn go" id="go" type="button">▶ Начать</button></div>`;
+  $('#go',st).onclick=()=>{ SFX.click(); draw(); };
+ }});
+
+/* ---- 6. CHAT ---- */
+const ANS=[[/токен/i,'Токен доступа: временный пропуск. OAuth-сервер выдаёт его в обмен на ключ авторизации, он живёт 30 минут и ездит в заголовке Authorization: Bearer.'],
+ [/basic|bearer/i,'Basic несёт ключ авторизации (base64 от Client ID и Secret) и нужен один раз, чтобы получить токен. Bearer несёт сам токен и ходит во все остальные запросы.'],
+ [/анекдот|шут/i,'Клиент приходит к API без токена. API: «401». Клиент: «Я же вчера заходил!» API: «Вчера был другой токен».'],
+ [/привет|здравств|хай/i,'Привет! Я GigaChat. Токен у тебя свежий, так что спрашивай.'],
+ [/кто ты|что ты|ты кто/i,'Я GigaChat, нейросетевая модель Сбера. В этой лабе ты говоришь со мной через REST API.'],
+ [/python|код|requests/i,'В Python меня зовут через requests: POST на /api/v1/chat/completions, в теле JSON с model и messages, в заголовке Bearer-токен.'],
+ [/ошибк|401|429/i,'401 значит токен истёк: получи новый и повтори. 429 значит слишком часто: подожди и повтори с паузой.']];
+SC.push({short:'Клиент-чат',door:['МИССИЯ 06 · ЗАДАНИЕ 6','ПЕРЕ','<span>ГОВОРЫ</span>'],tag:'Миссия 06 <em>· задание 6</em>',title:'Выйди <span>на связь</span>',
+ lead:'Клиентское приложение: пользователь пишет вопрос, скрипт шлёт <b>POST /chat/completions</b> с историей в <b>messages</b>, ответ лежит в <b>choices[0].message.content</b>.',
+ dossT:'Досье · клиентское приложение', doss:()=>codeWithCopy(PY.chat,'История диалога передаётся целиком: модель не помнит прошлые запросы сама.'),
+ build(st){ const hist=[];
+  st.innerHTML=`<div class="chatw"><div class="chat"><div class="row" style="justify-content:space-between"><span class="pill ok">● GigaChat</span><span class="pill am">демо: ответы сымитированы</span></div>
+    <div class="msgs" id="msgs"><div class="msg a"><span class="who">GigaChat</span>Канал открыт. О чём спросишь?</div></div>
+    <div class="sugg">${['Что такое токен?','Basic или Bearer?','Расскажи анекдот про API'].map(s=>`<button type="button">${s}</button>`).join('')}</div>
+    <div class="cin"><input class="inp" id="ci" placeholder="Напиши запрос…" maxlength="160" autocomplete="off"><button class="btn go" id="cs" type="button">➤</button></div></div>
+    <div class="col jsonlive"><span class="lbl">что улетает на сервер</span><div class="code" id="jl" style="flex:1;font-size:14px"></div></div></div>`;
+  const ci=$('#ci',st), jl=$('#jl',st), msgs=$('#msgs',st);
+  const live=()=>{ jl.innerHTML=`<span class="c">POST /api/v1/chat/completions</span>\n<span class="c">Authorization: Bearer ${esc(tokStr().slice(0,14))}…</span>\n\n`+jsonHL({model:'GigaChat',messages:hist.concat(ci.value?[{role:'user',content:ci.value}]:[]).slice(-4)}); };
+  live(); ci.oninput=live;
+  let typing=false;
+  const send=async(q)=>{ q=(q||ci.value).trim(); if(!q||typing) return; typing=true; ci.value=''; SFX.click();
+    msgs.insertAdjacentHTML('beforeend',`<div class="msg u">${esc(q)}</div>`); hist.push({role:'user',content:q}); live(); msgs.scrollTop=1e6;
+    if(!S.tok||tokLeft()<=0){ msgs.insertAdjacentHTML('beforeend',`<div class="msg a" style="border-color:var(--rd)"><span class="who" style="color:var(--rd)">401 Unauthorized</span>Токен истёк. Скрипт берёт новый и повторяет…</div>`); SFX.bad(); await sleep(900); issueToken(); }
+    const b=document.createElement('div'); b.className='msg a'; b.innerHTML='<span class="who">GigaChat</span><span class="typing"><i></i><i></i><i></i></span>'; msgs.appendChild(b); msgs.scrollTop=1e6;
+    await sleep(900); if(!CUR.alive) return;
+    const a=(ANS.find(([re])=>re.test(q))||[0,'Это демо без сети, поэтому отвечаю заготовкой. Настоящий ответ придёт из choices[0].message.content, когда скрипт отправит этот JSON с живым токеном.'])[1];
+    b.innerHTML='<span class="who">GigaChat</span><span class="tx"></span>'; const tx=$('.tx',b);
+    for(let k=0;k<a.length;k+=2){ tx.textContent=a.slice(0,k+2); if(k%6===0) SFX.tick(); msgs.scrollTop=1e6; await sleep(16); if(!CUR.alive) return; }
+    hist.push({role:'assistant',content:a}); live(); typing=false; if(!CUR.chat){ CUR.chat=1; complete(); } };
+  $('#cs',st).onclick=()=>send(); ci.onkeydown=e=>{ if(e.key==='Enter') send(); };
+  $$('.sugg button',st).forEach(b=>b.onclick=()=>send(b.textContent));
+ }});
+
+/* ---- 7. ERROR ARCADE ---- */
+const CODES=[{c:200,m:'OK',a:'ok',k:'ok'},{c:401,m:'Unauthorized',a:'tok',k:'au'},{c:429,m:'Too Many Requests',a:'wait',k:'e4'},{c:500,m:'Internal Server Error',a:'wait',k:'e5'},
+ {c:503,m:'Service Unavailable',a:'wait',k:'e5'},{c:400,m:'Bad Request',a:'fix',k:'e4'},{c:404,m:'Not Found',a:'fix',k:'e4'},{c:422,m:'Unprocessable Entity',a:'fix',k:'e4'}];
+const ACTS=[['ok','✅','Разобрать ответ'],['tok','🔑','Обновить токен'],['wait','⏳','Пауза и повтор'],['fix','🛠','Исправить запрос']];
+const WHY={ok:'200: всё хорошо, читаем JSON',tok:'401: токен истёк или неверный, берём новый',wait:'429 и 5xx: подождать (Retry-After или backoff) и повторить',fix:'4xx кроме 401/429: ошибка в нашем запросе, повтор не поможет'};
+SC.push({short:'Ошибки API',door:['МИССИЯ 07 · ЗАДАНИЕ 7','ПЕРЕ','<span>СТРЕЛКА</span>'],tag:'Миссия 07 <em>· задание 7</em>',title:'Отбей <span>ответы</span>',
+ lead:'Сервер стреляет кодами ответа. На каждый нужна своя реакция, и быстро: таймер ускоряется. Три жизни. На клавиатуре работают <b>1–4</b>.',
+ dossT:'Досье · обработка ошибок', doss:()=>codeWithCopy(PY.errors,'401 → выбросить кэш и взять новый токен. 429 и 5xx → пауза и повтор с экспоненциальной задержкой. Остальные 4xx → исключение: запрос надо исправлять.'),
+ build(st){ let lives=3, n=0, sc=0, cur=null, to=null, t0=0, dur=0; const N=12;
+  const intro=()=>{ st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:14px"><div class="big401" style="color:var(--am)">4xx·5xx</div><div class="lead">12 ответов сервера. Успей выбрать реакцию.</div><button class="btn go" id="go" type="button">▶ В бой</button></div>`; $('#go',st).onclick=play; };
+  const play=()=>{ lives=3;n=0;sc=0; st.innerHTML=`<div class="arc"><div class="row" style="justify-content:space-between"><span class="hearts" id="hp"></span><span class="lbl" id="rn"></span><span class="lbl" id="scv">0</span></div>
+     <div class="tbar"><b id="tb"></b></div><div class="arena" id="ar"></div><div class="acts">${ACTS.map(([a,i,t],k)=>`<button class="act" data-a="${a}" type="button"><span class="ic">${i}</span>${t}<span class="mono" style="display:block;font-size:13px;color:var(--mu2)">${k+1}</span></button>`).join('')}</div></div>`;
+    $$('.act',st).forEach(b=>b.onclick=()=>hit(b.dataset.a,b)); CUR.key=e=>{ const k=+e.key; if(k>=1&&k<=4) hit(ACTS[k-1][0],$$('.act',st)[k-1]); }; addEventListener('keydown',CUR.key); CUR.leave=()=>removeEventListener('keydown',CUR.key); next(); };
+  const hud=()=>{ $('#hp',st).textContent='❤'.repeat(lives)+'♡'.repeat(3-lives); $('#rn',st).textContent=`ответ ${Math.min(n,N)} / ${N}`; $('#scv',st).textContent=sc+' очк.'; };
+  const next=()=>{ if(n>=N||lives<=0) return end(); n++; cur=pick(CODES); hud(); dur=Math.max(1800,4000-n*190);
+    $('#ar',st).innerHTML=`<div class="rc ${cur.k}"><div class="code3">${cur.c}</div><div class="ms">${cur.m}</div></div>`; SFX.zap();
+    const tb=$('#tb',st); tb.style.transition='none'; tb.style.transform='scaleX(1)'; void tb.offsetWidth; tb.style.transition=`transform ${dur}ms linear`; tb.style.transform='scaleX(0)';
+    clearTimeout(to); to=T(()=>miss('время вышло'),dur); cur.live=true; };
+  const burst=(col)=>{ const ar=$('#ar',st); for(let i=0;i<18;i++){ const p=document.createElement('i'); p.className='burst'; p.style.background=col; ar.appendChild(p); const a=Math.random()*6.28, d=rnd(60,150);
+    p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px) scale(.2)`,opacity:0}],{duration:600,easing:'cubic-bezier(.2,.8,.2,1)'}); setTimeout(()=>p.remove(),650);} };
+  const hit=(a,b)=>{ if(!cur||!cur.live) return; cur.live=false; clearTimeout(to);
+    if(a===cur.a){ sc+=10*S.combo; comboUp(); xp(20,b); burst('#3ef08a'); b.classList.add('flashok'); setTimeout(()=>b.classList.remove('flashok'),700); T(next,420); }
+    else miss(WHY[cur.a]); hud(); };
+  const miss=(why)=>{ if(cur) cur.live=false; lives--; SFX.bad(); comboReset(); burst('#ff3b4e'); $('#ar',st).classList.add('shake'); setTimeout(()=>$('#ar',st)?.classList.remove('shake'),500); toast(`✖ ${cur.c}: ${WHY[cur.a].replace(/^[^:]+: /,'')}`,'bad'); hud(); T(next,1100); };
+  const end=()=>{ CUR.leave&&CUR.leave(); const win=lives>0; st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:12px"><div class="clock" style="color:${win?'var(--g2)':'var(--rd)'}">${win?'ВЫСТОЯЛ':'ПАЛ'}</div><div class="lead">${sc} очков · жизней ${lives}</div>
+     <div class="code" style="white-space:normal;text-align:left;max-width:560px">${Object.values(WHY).map(w=>'▸ '+esc(w)).join('<br>')}</div><button class="btn" id="again" type="button">↻ Ещё раунд</button></div>`;
+    $('#again',st).onclick=play; complete(win?160:80); if(win) confetti(40); };
+  intro();
+ }});
+
+/* ---- 8. PROXY ---- */
+const VD=[['🌐','В JavaScript на фронтенде','Любой откроет DevTools и заберёт ключ',0],['📂','Прямо в коде, и в git','Репозиторий утечёт вместе с ключом',0],['🔐','В переменных окружения сервера (.env)','Ключ не покидает сервер',1],['🔗','В параметре URL','Осядет в логах и истории браузера',0]];
+SC.push({short:'Прокси FastAPI',door:['МИССИЯ 08 · ЗАДАНИЕ 9','ПРОКСИ','<span>FASTAPI</span>'],tag:'Миссия 08 <em>· задание 9</em>',title:'Свой <span>сервер-прокси</span>',
+ lead:'Браузер не должен знать ключ. Он стучится в твой <b>FastAPI</b> на <b>POST /ask</b>, а сервер сам добавляет токен и проксирует запрос в GigaChat. Сначала спрячь ключ.',
+ dossT:'Досье · прокси на FastAPI', doss:()=>codeWithCopy(PY.proxy,'Запуск: uvicorn server:app --reload, затем POST http://127.0.0.1:8000/ask с телом {"prompt": "..."}. Документация сама появится на /docs.')+codeWithCopy(PY.env,'Секрет хранится в окружении сервера:'),
+ build(st){ st.innerHTML=`<div class="px"><div class="pxd" id="pxd"><div class="pn" id="n1"><div class="ic">🧑‍💻</div><div class="nm">Браузер</div><div class="sb">fetch('/ask')</div></div>
+    <div class="pn srv" id="n2"><div class="ic">🛡</div><div class="nm">Твой FastAPI</div><div class="sb">POST /ask</div><div class="vault" id="vlt">ключ: ?</div></div>
+    <div class="pn" id="n3"><div class="ic">🧠</div><div class="nm">GigaChat API</div><div class="sb">/chat/completions</div></div><span class="pkt" id="pk"></span></div>
+    <div class="lead" id="cap" style="font-size:15px;min-height:1.5em;text-align:center">Где сервер держит ключ авторизации?</div>
+    <div class="doors4">${VD.map(([i,t,s],k)=>`<button class="vd" data-k="${k}" type="button"><span class="ic">${i}</span>${t}<small style="display:none">${s}</small></button>`).join('')}</div></div>`;
+  const pk=$('#pk',st), pxd=$('#pxd',st);
+  const cx=id=>{ const a=$(id,st).getBoundingClientRect(), b=pxd.getBoundingClientRect(); return a.left-b.left+a.width/2-7; };
+  const move=(a,b,col,ms=800)=>{ pk.style.background=col; pk.style.boxShadow='0 0 16px '+col; pk.style.opacity=1; return pk.animate([{left:cx(a)+'px'},{left:cx(b)+'px'}],{duration:ms,easing:'cubic-bezier(.6,0,.3,1)',fill:'forwards'}).finished; };
+  const run=async()=>{ const cap=$('#cap',st); try{
+    cap.innerHTML='1 · браузер → сервер: <b>{"prompt": "…"}</b> без всяких ключей'; SFX.whoosh(); await move('#n1','#n2','#ffb020'); if(!CUR.alive) return;
+    cap.innerHTML='2 · сервер добавляет <b>Bearer</b> из кэша и шлёт в GigaChat'; SFX.whoosh(); await move('#n2','#n3','#8fe3ff'); if(!CUR.alive) return;
+    cap.innerHTML='3 · GigaChat отвечает серверу'; await sleep(300); SFX.whoosh(); await move('#n3','#n2','#3ef08a'); if(!CUR.alive) return;
+    cap.innerHTML='4 · сервер → браузер: <b>{"answer": "…"}</b>. Секрет не покинул сервер'; SFX.whoosh(); await move('#n2','#n1','#3ef08a'); }catch(e){} };
+  $$('.vd',st).forEach(b=>b.onclick=async()=>{ const v=VD[+b.dataset.k]; $('small',b).style.display='block';
+    if(!v[3]){ b.classList.add('bad'); SFX.bad(); comboReset(); toast('💥 '+v[2],'bad'); return; }
+    if(CUR.px) return; CUR.px=1; b.classList.add('ok'); $$('.vd',st).forEach(x=>x.disabled=true); SFX.ok(); comboUp(); xp(80,b);
+    const vl=$('#vlt',st); vl.classList.add('on'); vl.textContent='ключ: os.environ ✓'; await run(); if(CUR.alive) complete(); });
+ }});
+</script>
+<script>
+/* ---- 9. PYTEST ---- */
+SC.push({short:'Тесты pytest',door:['МИССИЯ 09 · ЗАДАНИЕ 10','ПРОВЕРКА','<span>PYTEST</span>'],tag:'Миссия 09 <em>· задание 10</em>',title:'Проверка <span>боем</span>',
+ lead:'Автотест подтверждает: токен получается, запрос к API проходит. Хитрость в том, чтобы юнит-тесты <b>не ходили в сеть</b>, а настоящий API проверял отдельный тест.',
+ dossT:'Досье · тесты pytest', doss:()=>codeWithCopy(PY.tests,'monkeypatch подменяет requests.post и requests.get, поэтому тесты идут без сети и за доли секунды. test_real_api запускается, только если в окружении есть настоящий ключ.'),
+ build(st){ st.innerHTML=`<div class="col"><div class="row"><button class="btn go" id="run" type="button">▶ pytest -v</button><span class="pill">test_gigachat.py</span></div><div class="term" id="tm"><span class="m">$ </span></div><div id="qq"></div></div>`;
+  const tm=$('#tm',st); const line=async(h,ms=260)=>{ tm.insertAdjacentHTML('beforeend',h+'\n'); SFX.tick(); tm.scrollTop=1e6; await sleep(ms); };
+  const runA=async()=>{ $('#run',st).disabled=true; tm.innerHTML='<span class="m">$ pytest -v</span>\n'; await sleep(300);
+    await line('<span class="m">collected 5 items</span>');
+    await line('test_auth_key_is_base64 <span class="p">PASSED</span>');
+    await line('test_get_token <span class="f">FAILED</span>',400);
+    await line('<span class="f">E  requests.exceptions.ConnectionError: в CI нет доступа к ngw.devices.sberbank.ru</span>');
+    await line('<span class="bar-bad">1 failed, 1 passed, 3 deselected</span>'); SFX.bad();
+    $('#qq',st).innerHTML=`<div class="qbox"><div class="q">Тест лезет в настоящий API и падает без сети. Что делаем?</div><div class="opts">
+      <button class="opt" type="button">Удалить тест, он мешает</button><button class="opt" type="button">Подменить requests.post через monkeypatch</button><button class="opt" type="button">Поставить timeout=999</button></div></div>`;
+    opt($$('#qq .opt',st),1,async(ok,b)=>{ if(ok){ comboUp(); xp(80,b); } else { SFX.bad(); comboReset(); toast('Правильно: подменить сеть фейковым ответом','am'); } await sleep(900); if(CUR.alive) runB(); }); };
+  const runB=async()=>{ $('#qq',st).innerHTML=''; tm.innerHTML='<span class="m">$ pytest -v</span>\n'; await sleep(300);
+    await line('<span class="m">collected 5 items</span>');
+    for(const t of ['test_auth_key_is_base64','test_get_token','test_get_models','test_401_means_invalid']) await line(`${t} <span class="p">PASSED</span>`,300);
+    await line('test_real_api <span class="y">SKIPPED</span> <span class="m">(нет ключа)</span>');
+    await line('<span class="bar-ok">4 passed, 1 skipped in 0.12s</span>'); SFX.win(); confetti(50); complete(); };
+  $('#run',st).onclick=runA;
+ }});
+
+/* ---- 10. BOSS ---- */
+const QS=[
+ ['Как работает аутентификация через токены?','Ключ (Basic) меняем на временный токен, токен шлём в Bearer',['Логин и пароль в каждом запросе','Токен вечный и выдаётся один раз']],
+ ['Что важно при обработке ошибок API?','Разбирать коды: 401 новый токен, 429 пауза, 5xx повтор',['Любая ошибка роняет программу','Повторять запрос сразу и бесконечно']],
+ ['Когда стоит кэшировать данные из API?','Когда они живут дольше одного запроса, как токен на 30 минут',['Всегда и навсегда','Никогда, это небезопасно']],
+ ['Как устроено проксирование запросов?','Свой сервер принимает запрос клиента и пересылает его в API, добавив токен',['Клиент сам ходит в API с секретом','Прокси просто меняет IP пользователя']],
+ ['Какие методы защиты данных используют веб-приложения?','HTTPS, OAuth 2.0, короткоживущие токены, секреты в окружении',['Пароли в base64','Спрятать адрес API']],
+ ['Как тестировать API-запросы в Python?','pytest с подменой requests, плюс отдельный интеграционный тест',['Только руками через браузер','Никак, сеть непредсказуема']],
+ ['Как ускорить работу с внешним API?','Кэш токена, requests.Session, таймауты, асинхронность',['Новый токен перед каждым запросом','Убрать таймауты совсем']],
+ ['Как организовать логи и мониторинг?','logging: метод, путь, код, время ответа; токены в лог не пишем',['print(token) в консоль','Логи не нужны, если работает']],
+ ['Какие меры безопасности при работе с внешними API?','Ключи не в коде и не в git, проверка TLS-сертификата, лимиты',['verify=False в продакшене','Делиться ключом в чате группы']],
+ ['Как обновлять данные в реальном времени через API?','Поллинг по расписанию, вебхуки, WebSocket или потоковый ответ (stream)',['Перезагружать страницу руками','Запрашивать каждую миллисекунду']]];
+SC.push({short:'Финальный босс',door:['ФИНАЛ · КОНТРОЛЬНЫЕ ВОПРОСЫ','ФИНАЛЬНЫЙ','<span>БОСС</span>'],tag:'Финал <em>· контрольные вопросы</em>',title:'Защита <span>лабы</span>',
+ lead:'Десять контрольных вопросов из методички. Каждый верный ответ снимает боссу десятую часть здоровья. Ошибся три раза: бой сначала.',
+ dossT:'Досье · ответы на контрольные', doss:()=>QS.map(([q,a],k)=>`<p><b>${k+1}. ${esc(q)}</b><br>${esc(a)}.</p>`).join(''),
+ build(st){ let qi=0, hp=3, order=[];
+  const intro=()=>{ st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:14px"><div class="bface" style="width:96px">👁</div><div class="lead">Аудитор API ждёт. 10 вопросов, 3 жизни.</div><button class="btn go red" style="background:var(--rd);border-color:var(--rd);color:#fff" id="go" type="button">⚔ Начать бой</button></div>`;
+    $('#go',st).onclick=()=>{ SFX.boss(); qi=0; hp=3; order=QS.map(q=>q); draw(); }; };
+  const draw=()=>{ const [q,a,w]=order[qi]; const opts=shuffle([a,...w]); const ci=opts.indexOf(a);
+    st.innerHTML=`<div class="boss"><div class="bhead"><div class="bface" id="bf">👁</div><div class="hp"><div class="nm">Аудитор API</div><div class="hb2"><b style="width:${(10-qi)*10}%"></b></div><div class="me">ты: ${'❤'.repeat(hp)}${'♡'.repeat(3-hp)} · вопрос ${qi+1}/10</div></div></div>
+      <div class="bq">${esc(q)}</div><div class="bopts">${opts.map(o=>`<button class="opt" type="button">${esc(o)}</button>`).join('')}</div></div>`;
+    opt($$('.bopts .opt',st),ci,async(ok,b)=>{ const bf=$('#bf',st);
+      if(ok){ comboUp(); xp(50,b); bf.classList.add('hit'); SFX.zap(); $('.hb2 b',st).style.width=(9-qi)*10+'%'; }
+      else { hp--; SFX.bad(); comboReset(); $('.boss',st).classList.add('shake'); }
+      await sleep(ok?900:1700); if(!CUR.alive) return;
+      if(hp<=0) return lose(); qi++; qi>=order.length?win():draw(); }); };
+  const lose=()=>{ st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:12px"><div class="big401">ПРОВАЛ</div><div class="lead">Аудитор не впечатлён. Загляни в досье и обратно в бой.</div><button class="btn" id="re" type="button">↻ Реванш</button></div>`; $('#re',st).onclick=()=>{ qi=0;hp=3;draw(); }; };
+  const win=async()=>{ st.innerHTML=`<div class="col" style="height:100%;justify-content:center;align-items:center;text-align:center;gap:12px"><div class="clock" style="color:var(--g2)">ЗАЩИЩЕНО</div><div class="lead">Аудитор повержен. Жизней осталось: ${hp}.</div></div>`;
+    confetti(90); await slam('ФИНАЛЬНЫЙ БОСС ПОВЕРЖЕН','ЛАБА <em>СДАНА</em>',1500); complete(300); };
+  intro();
+ }});
+
+/* ---- 11. CREDITS ---- */
+SC.push({short:'Титры',door:['ЭПИЛОГ','ОПЕРАЦИЯ','<span>ЗАВЕРШЕНА</span>'],tag:'Эпилог <em>· итог</em>',title:'Операция <span>завершена</span>',
+ lead:'Ключ собран, токен получен и обновляется сам, лежит в тайнике, ошибки отбиты, секрет спрятан за прокси, тесты зелёные.',
+ dossT:'Досье · полный код', doss:()=>codeWithCopy(PY.full,'Модуль gigachat_client.py целиком (задания 1–8). Ключ берётся из переменной окружения GIGACHAT_AUTH_KEY.')+codeWithCopy(PY.proxy,'server.py (задание 9):')+codeWithCopy(PY.tests,'test_gigachat.py (задание 10):'),
+ build(st){ const r=rankOf(S.xp)[1]; const md=SC.filter((_,k)=>S.done.has(k)).length;
+  st.innerHTML=`<div class="fin"><div class="lbl">звание</div><div class="rk">${r}</div><div class="sc">${S.xp} XP · миссий ${md}/${SC.length-1} · лучшее комбо ×${S.best||1}</div>
+   <div class="roll"><div class="in">${[['GigaChat API','оракул'],['OAuth 2.0','привратник'],['base64','маскировка, но не броня'],['RqUID','уникальный отпечаток'],['token.json','тайник'],['401','будильник'],['429','вышибала'],['FastAPI','двойной агент'],['pytest','контрразведка'],['ДГТУ · кафедра ИТ','продакшн'],['Практическая работа №5','«Российские GPT-модели»']].map(([a,b])=>`<div><b>${a}</b>${b}</div>`).join('')}</div></div>
+   <div class="row" style="justify-content:center"><button class="btn go" id="full" type="button">📜 Полный код</button><button class="btn" id="re" type="button">↻ Сначала</button></div></div>`;
+  $('#full',st).onclick=()=>dossier('Досье · полный код',SC[SC.length-1].doss());
+  $('#re',st).onclick=()=>{ S.xp=0;S.combo=1;S.best=0;S.done=new Set();S.tok=null;S.warp=0;tokWasLive=false;renderXP();renderTok();go(0); };
+  confetti(80); SFX.win(); S.done.add(S.i); renderTrack();
+ }});
+
+/* ================= BOOT ================= */
+function isFs(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+async function enterFs(){ const d=document.documentElement; try{ if(d.requestFullscreen) await d.requestFullscreen({navigationUI:'hide'}); else if(d.webkitRequestFullscreen) d.webkitRequestFullscreen(); else throw 0;
+  try{ await screen.orientation.lock('landscape'); }catch(e){} }catch(e){ toast('Полный экран тут недоступен. На iPhone: «Поделиться» → «На экран Домой»','am'); } }
+function toggleFs(){ if(isFs()){ (document.exitFullscreen||document.webkitExitFullscreen).call(document); } else enterFs(); }
+$('#fs').onclick=toggleFs;
+$('#snd').onclick=()=>{ S.sound=!S.sound; $('#snd').textContent=S.sound?'♪ ВКЛ':'♪ ВЫКЛ'; if(S.sound){ audio(); AC&&AC.resume(); startDrone(); SFX.ok(); } else stopDrone(); };
+
+let rotSkip=false;
+function checkRot(){ const portrait=innerHeight>innerWidth && matchMedia('(pointer:coarse)').matches; $('#rotate').classList.toggle('show',portrait&&!rotSkip); }
+addEventListener('resize',checkRot); addEventListener('orientationchange',()=>setTimeout(checkRot,200)); checkRot();
+$('#rotateSkip').onclick=()=>{ rotSkip=true; checkRot(); };
+setInterval(()=>{ const k=$('#kcTxt'); if(k&&!$('#start').classList.contains('hide')) k.textContent=fakeToken().join('.').slice(0,72); },1600);
+
+async function begin(fs){ audio(); if(AC&&AC.state==='suspended') AC.resume(); if(fs) await enterFs(); SFX.slam(); startDrone();
+  $('#start').classList.add('hide'); await sleep(500);
+  await cineLines(['2026. Ростов-на-Дону. Кафедра ИТ.','Где-то в дата-центре Сбера ждёт *GigaChat*.','Он отвечает только тем, у кого есть *токен*.','Токен живёт *30 минут*.','Задача: получить его, удержать и не спалить ключ.']);
+  $('#app').classList.add('on'); renderXP(); renderTok();
+  await slam('ПРАКТИЧЕСКАЯ РАБОТА №5','ОПЕРАЦИЯ <em>«ТОКЕН»</em>',1500); document.body.classList.remove('cine');
+  go(0); }
+$('#goFs').onclick=()=>begin(true); $('#goWin').onclick=()=>begin(false);
 </script>
 </body>
 </html>
